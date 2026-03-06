@@ -19,7 +19,7 @@ export const ORADEA_EDGES = [
     { source: 'checkin', target: 'security' },
     { source: 'security', target: 'dutyfree' },
     { source: 'dutyfree', target: 'gate2' },
-    { source: 'dutyfreee', target: 'gate3' },
+    { source: 'dutyfree', target: 'gate3' },
     { source: 'dutyfree', target: 'cafe' },
     { source: 'dutyfree', target: 'wc' },
     { source: 'cafe', target: 'gate1' },

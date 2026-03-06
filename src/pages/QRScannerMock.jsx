@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, X, RefreshCw } from 'lucide-react';
+import { Camera, X, RefreshCw, FlipHorizontal, Flashlight } from 'lucide-react';
 import { Scanner } from '@yudiel/react-qr-scanner';
 import { ORADEA_NODES } from '../data/OradeaMapGraph';
 
@@ -8,17 +8,31 @@ const QRScannerMock = () => {
     const navigate = useNavigate();
     const [hasError, setHasError] = useState(false);
 
+    // Custom state for camera controls since built-in can be buggy on some OS
+    const [facingMode, setFacingMode] = useState('environment');
+    const [isTorchOn, setIsTorchOn] = useState(false);
+    const [scanned, setScanned] = useState(false); // Navigation lock
+
     const handleScan = (result) => {
+        if (scanned) return; // Prevent multiple scans
         if (result && result.length > 0) {
             const decodedText = result[0].rawValue;
             console.log("Scanned:", decodedText);
 
-            const scannedId = decodedText.trim().toLowerCase();
+            let scannedId = decodedText.trim().toLowerCase();
+
+            // Simple heuristics in case user scanned a full URL by accident
+            if (scannedId.includes('/')) {
+                const parts = scannedId.split('/');
+                scannedId = parts[parts.length - 1];
+            }
+
+            setScanned(true); // Lock
 
             if (ORADEA_NODES[scannedId]) {
                 navigate(`/map?scanned=true&origin=${scannedId}`);
             } else {
-                console.warn(`Node ${scannedId} not found. Defaulting to Entrance.`);
+                console.warn(`Node ${scannedId} not found in map graph.`);
                 navigate('/map?scanned=true&origin=entrance');
             }
         }
@@ -26,10 +40,17 @@ const QRScannerMock = () => {
 
     const handleError = (error) => {
         console.error("Scanner Error:", error);
-        // Only set error state for permission denials, not routine track errors
         if (error.name === 'NotAllowedError' || error.name === 'NotFoundError') {
             setHasError(true);
         }
+    };
+
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    };
+
+    const toggleTorch = () => {
+        setIsTorchOn(prev => !prev);
     };
 
     return (
@@ -88,6 +109,7 @@ const QRScannerMock = () => {
             <div style={{
                 flex: 1,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '1rem',
@@ -104,6 +126,7 @@ const QRScannerMock = () => {
                     boxShadow: '0 0 0 100vmax rgba(0,0,0,0.7)',
                     border: '2px solid rgba(255,255,255,0.2)',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative'
@@ -116,12 +139,17 @@ const QRScannerMock = () => {
                         </div>
                     ) : (
                         <Scanner
+                            key={`${facingMode}-${isTorchOn}`} // Forces remount to apply new constraints dynamically!
                             onScan={handleScan}
                             onError={handleError}
+                            constraints={{
+                                facingMode: facingMode,
+                                advanced: [{ torch: isTorchOn }]
+                            }}
                             components={{
                                 audio: false,
-                                onOff: true,
-                                torch: true,
+                                onOff: false, // Disabling built-in buttons
+                                torch: false, // Disabling built-in torch button
                                 zoom: false,
                                 finder: true,
                             }}
@@ -132,6 +160,38 @@ const QRScannerMock = () => {
                         />
                     )}
                 </div>
+
+                {/* Custom Overlay Controls */}
+                {!hasError && (
+                    <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+                        <button
+                            onClick={toggleCamera}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.75rem 1.25rem',
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '12px', color: 'white',
+                                fontWeight: 500, backdropFilter: 'blur(10px)',
+                            }}
+                        >
+                            <FlipHorizontal size={20} /> Flip
+                        </button>
+                        <button
+                            onClick={toggleTorch}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                padding: '0.75rem 1.25rem',
+                                backgroundColor: isTorchOn ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.2)',
+                                borderRadius: '12px', color: 'white',
+                                fontWeight: 500, backdropFilter: 'blur(10px)',
+                            }}
+                        >
+                            <Flashlight size={20} /> Torch
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Instructional text footer */}
@@ -145,6 +205,7 @@ const QRScannerMock = () => {
             }}>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Scan Wall Location QR</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Point your camera at a FlyMate QR code</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '4px' }}>Note: Torch requires HTTPS</p>
             </div>
 
         </div>

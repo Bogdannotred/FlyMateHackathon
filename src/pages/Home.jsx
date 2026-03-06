@@ -51,6 +51,7 @@ const Home = () => {
                         transition: 'all 0.3s ease',
                         boxShadow: 'var(--shadow-md)',
                         position: 'relative',
+                        zIndex: 10,
                         overflow: 'hidden'
                     }}
                     onMouseOver={(e) => {
@@ -90,6 +91,8 @@ const Home = () => {
                         fontSize: '1rem',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
+                        position: 'relative',
+                        zIndex: 10
                     }}
                     onMouseOver={(e) => {
                         e.currentTarget.style.color = 'var(--text-main)';
