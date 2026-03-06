@@ -6,10 +6,10 @@ const QRScannerMock = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Simulate reading a QR code successfully after 2 seconds
+        // Simulate reading a QR code located at the airport entrance
         const timer = setTimeout(() => {
-            // Navigate to map, potentially passing some state or params to simulate the "scan anything" requirement
-            navigate('/map?scanned=true');
+            // Pass the node ID representing the physical location of the scanned QR code
+            navigate('/map?scanned=true&origin=entrance');
         }, 2000);
 
         return () => clearTimeout(timer);
@@ -121,8 +121,8 @@ const QRScannerMock = () => {
                 textAlign: 'center',
                 padding: '0 2rem'
             }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Point camera at the QR code</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>It will scan automatically</p>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Scan Wall Location QR</h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Locate a FlyMate QR point in the terminal</p>
             </div>
 
         </div>
