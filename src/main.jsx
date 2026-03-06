@@ -5,6 +5,7 @@ import App from './App.jsx';
 import Home from './pages/Home.jsx';
 import QRScannerMock from './pages/QRScannerMock.jsx';
 import MapPage from './pages/MapPage.jsx';
+import Gamificare from './pages/Gamificare.jsx';
 import './styles/global.css'; // Primary global styles
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route index element={<Home />} />
           <Route path="scanner" element={<QRScannerMock />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="gamificare" element={<Gamificare />} />
         </Route>
       </Routes>
     </BrowserRouter>

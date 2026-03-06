@@ -29,6 +29,17 @@ const QRScannerMock = () => {
 
             setScanned(true); // Lock
 
+            // Track unique scan for gamification
+            try {
+                const storedQRs = JSON.parse(localStorage.getItem('flymate_scanned_qrs') || '[]');
+                if (!storedQRs.includes(scannedId)) {
+                    storedQRs.push(scannedId);
+                    localStorage.setItem('flymate_scanned_qrs', JSON.stringify(storedQRs));
+                }
+            } catch (e) {
+                console.error("Failed to save QR to generic local storage", e);
+            }
+
             if (ORADEA_NODES[scannedId]) {
                 navigate(`/map?scanned=true&origin=${scannedId}`);
             } else {
