@@ -110,31 +110,49 @@ const Home = () => {
                 </button>
             </div>
 
-            {/* Decorative background element */}
+            {/* Decorative background element animated (High Density) */}
             <div style={{
                 position: 'absolute',
-                top: '-10%',
-                left: '-10%',
-                width: '300px',
-                height: '300px',
-                background: 'radial-gradient(circle, rgba(15, 98, 254, 0.15) 0%, rgba(10, 10, 10, 0) 70%)',
+                top: '-15%',
+                left: '-15%',
+                width: '500px',
+                height: '500px',
+                background: 'radial-gradient(circle, rgba(99, 102, 241, 0.85) 0%, rgba(79, 70, 229, 0.4) 40%, rgba(15, 23, 42, 0) 80%)',
                 borderRadius: '50%',
-                filter: 'blur(40px)',
+                filter: 'blur(50px)',
                 zIndex: -1,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                animation: 'floatBlob1 8s ease-in-out infinite alternate'
             }} />
             <div style={{
                 position: 'absolute',
-                bottom: '-10%',
-                right: '-10%',
-                width: '250px',
-                height: '250px',
-                background: 'radial-gradient(circle, rgba(255, 51, 102, 0.1) 0%, rgba(10, 10, 10, 0) 70%)',
+                bottom: '-20%',
+                right: '-15%',
+                width: '450px',
+                height: '450px',
+                background: 'radial-gradient(circle, rgba(45, 212, 191, 0.85) 0%, rgba(20, 184, 166, 0.4) 40%, rgba(15, 23, 42, 0) 80%)',
                 borderRadius: '50%',
-                filter: 'blur(40px)',
+                filter: 'blur(50px)',
                 zIndex: -1,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                animation: 'floatBlob2 10s ease-in-out infinite alternate-reverse'
             }} />
+
+            {/* Floating animations for the home page background */}
+            <style>{`
+                @keyframes floatBlob1 {
+                    0% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(25%, 30%) scale(1.3); }
+                    66% { transform: translate(-15%, 40%) scale(0.8); }
+                    100% { transform: translate(-30%, -10%) scale(1.4); }
+                }
+                @keyframes floatBlob2 {
+                    0% { transform: translate(0, 0) scale(1); }
+                    33% { transform: translate(-25%, -35%) scale(1.4); }
+                    66% { transform: translate(15%, -45%) scale(0.7); }
+                    100% { transform: translate(30%, 15%) scale(1.3); }
+                }
+            `}</style>
 
         </div>
     );

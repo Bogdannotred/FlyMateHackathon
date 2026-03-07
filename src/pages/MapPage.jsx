@@ -260,7 +260,7 @@ const MapPage = () => {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', flex: 1,
-            backgroundColor: '#0a0a0c', position: 'relative', overflow: 'hidden', minHeight: '100vh'
+            backgroundColor: 'var(--bg-dark)', position: 'relative', overflow: 'hidden', minHeight: '100vh'
         }} className="animate-fade-in">
 
             {/* Notification Pop-up */}
@@ -287,51 +287,59 @@ const MapPage = () => {
                 pointerEvents: isNavigating ? 'none' : 'auto'
             }}>
                 <div style={{
-                    backgroundColor: 'rgba(20, 20, 20, 0.65)', backdropFilter: 'blur(20px)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '24px',
+                    backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(30px) saturate(200%)',
+                    WebkitBackdropFilter: 'blur(30px) saturate(200%)',
+                    border: '1px solid var(--glass-border)', borderRadius: '24px',
                     padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                    boxShadow: 'var(--shadow-md), inset 0 1px 1px rgba(255, 255, 255, 0.15)'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <User size={20} color="var(--primary)" />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.5rem' }}>
+                        <User size={20} color="var(--primary)" style={{ filter: 'drop-shadow(0 0 4px rgba(99, 102, 241, 0.5))' }} />
                         <select
                             value={selectedOriginId} onChange={(e) => setSelectedOriginId(e.target.value)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none', color: selectedOriginId ? 'white' : 'var(--text-muted)',
-                                fontSize: '1rem', outline: 'none', appearance: 'none'
+                                fontSize: '1.05rem', fontWeight: 500, outline: 'none', appearance: 'none', cursor: 'pointer',
+                                paddingRight: '1rem',
+                                backgroundImage: `radial-gradient(100% 100% at 100% 50%, rgba(255,255,255,0.3) 1px, transparent 1px)`,
+                                backgroundSize: '10px 10px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center'
                             }}
                         >
-                            <option value="" disabled style={{ color: 'black' }}>Your Location</option>
-                            {nodes.map(n => <option key={`org-${n.id}`} value={n.id} style={{ color: 'black' }}>{n.label}</option>)}
+                            <option value="" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }}>Your Location</option>
+                            {nodes.map(n => <option key={`org-${n.id}`} value={n.id} style={{ backgroundColor: 'var(--bg-card)', color: 'white', padding: '10px' }}>{n.label}</option>)}
                         </select>
                     </div>
 
-                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 0.5rem' }} />
+                    <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, var(--glass-border), transparent)', margin: '0 0.5rem' }} />
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <MapIcon size={20} color={selectedDestId ? 'var(--accent)' : 'var(--text-muted)'} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 0.5rem' }}>
+                        <MapIcon size={20} color={selectedDestId ? 'var(--accent)' : 'var(--text-muted)'} style={{ filter: selectedDestId ? 'drop-shadow(0 0 4px rgba(45, 212, 191, 0.5))' : 'none' }} />
                         <select
                             value={selectedDestId} onChange={(e) => setSelectedDestId(e.target.value)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none', color: selectedDestId ? 'white' : 'var(--text-muted)',
-                                fontSize: '1rem', outline: 'none', appearance: 'none'
+                                fontSize: '1.05rem', fontWeight: 500, outline: 'none', appearance: 'none', cursor: 'pointer',
+                                paddingRight: '1rem',
+                                backgroundImage: `radial-gradient(100% 100% at 100% 50%, rgba(255,255,255,0.3) 1px, transparent 1px)`,
+                                backgroundSize: '10px 10px', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center'
                             }}
                         >
-                            <option value="" disabled style={{ color: 'black' }}>Choose Destination</option>
+                            <option value="" disabled style={{ backgroundColor: 'var(--bg-card)', color: 'var(--text-muted)' }}>Choose Destination</option>
                             {nodes.map(n => (
-                                <option key={`dest-${n.id}`} value={n.id} disabled={n.id === selectedOriginId} style={{ color: 'black' }}>{n.label}</option>
+                                <option key={`dest-${n.id}`} value={n.id} disabled={n.id === selectedOriginId} style={{ backgroundColor: 'var(--bg-card)', color: n.id === selectedOriginId ? 'rgba(255,255,255,0.2)' : 'white', padding: '10px' }}>{n.label}</option>
                             ))}
                         </select>
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
                     <button
                         onClick={() => navigate('/scanner')}
                         style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            padding: '1rem', backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '16px', color: 'white', fontWeight: 600, backdropFilter: 'blur(10px)'
+                            padding: '1rem', backgroundColor: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                            borderRadius: '16px', color: 'white', fontWeight: 600, backdropFilter: 'blur(20px)',
+                            boxShadow: 'var(--shadow-sm)', transition: 'all 0.3s ease', cursor: 'pointer'
                         }}
                     >
                         <QrCode size={20} /> Scan Anchor
@@ -341,8 +349,11 @@ const MapPage = () => {
                         onClick={handleStartNavigation} disabled={!selectedOriginId || !selectedDestId}
                         style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            padding: '1rem', backgroundColor: 'var(--primary)', border: 'none', borderRadius: '16px',
-                            color: 'white', fontWeight: 700, opacity: (selectedOriginId && selectedDestId) ? 1 : 0.5,
+                            padding: '1rem', background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))',
+                            border: 'none', borderRadius: '16px', color: 'white', fontWeight: 700, 
+                            opacity: (selectedOriginId && selectedDestId) ? 1 : 0.5,
+                            boxShadow: (selectedOriginId && selectedDestId) ? '0 4px 15px rgba(99, 102, 241, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2)' : 'none',
+                            transition: 'all 0.3s ease', cursor: (selectedOriginId && selectedDestId) ? 'pointer' : 'not-allowed'
                         }}
                     >
                         <Navigation size={20} /> Route
@@ -356,8 +367,8 @@ const MapPage = () => {
                     position: 'absolute', top: '3rem', left: '1.5rem', right: '1.5rem', zIndex: 40, animation: 'fadeIn 0.5s ease'
                 }}>
                     <div style={{
-                        backgroundColor: 'rgba(20, 20, 20, 0.8)', backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '24px', padding: '1.5rem',
+                        backgroundColor: 'var(--glass-bg)', backdropFilter: 'blur(20px)',
+                        border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem',
                         display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
                     }}>
                         <div style={{
@@ -400,7 +411,7 @@ const MapPage = () => {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         gap: '1rem',
-                        backgroundColor: alert.type === 'flight' ? 'rgba(15, 98, 254, 0.9)' : 'rgba(30,30,30,0.9)',
+                        backgroundColor: alert.type === 'flight' ? 'rgba(99, 102, 241, 0.9)' : 'var(--glass-bg)',
                         border: alert.type === 'flight' ? '1px solid var(--primary-hover)' : '1px solid var(--border)',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
                         animation: 'slideDown 0.4s ease-out, fadeOut 0.4s ease-in 9.6s forwards',
@@ -427,20 +438,24 @@ const MapPage = () => {
             {/* Zoom Controls Overlay */}
             <div style={{
                 position: 'absolute', right: '1.5rem', top: isNavigating ? '12rem' : '15rem',
-                display: 'flex', flexDirection: 'column', gap: '0.5rem', zIndex: 40,
+                display: 'flex', flexDirection: 'column', gap: '0.75rem', zIndex: 40,
                 transition: 'top 0.4s ease'
             }}>
                 <button onClick={handleZoomIn} style={{
-                    width: '44px', height: '44px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    width: '48px', height: '48px', borderRadius: '16px', backgroundColor: 'var(--glass-bg)',
+                    backdropFilter: 'blur(30px) saturate(200%)', border: '1px solid var(--glass-border)', color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: 'var(--shadow-md), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                    transition: 'all 0.3s ease', cursor: 'pointer'
                 }}>
                     <Plus size={24} />
                 </button>
                 <button onClick={handleZoomOut} style={{
-                    width: '44px', height: '44px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.1)',
-                    backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', color: 'white',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                    width: '48px', height: '48px', borderRadius: '16px', backgroundColor: 'var(--glass-bg)',
+                    backdropFilter: 'blur(30px) saturate(200%)', border: '1px solid var(--glass-border)', color: 'white',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: 'var(--shadow-md), inset 0 1px 1px rgba(255, 255, 255, 0.1)',
+                    transition: 'all 0.3s ease', cursor: 'pointer'
                 }}>
                     <Minus size={24} />
                 </button>
@@ -558,7 +573,7 @@ const MapPage = () => {
                         {/* Main Building Outline - Real Releveu Paths */}
                         <path
                             d={WALL_PATHS}
-                            fill="rgba(20, 22, 28, 0.4)"
+                            fill="rgba(30, 41, 59, 0.5)"
                             stroke="rgba(255,255,255,0.4)"
                             strokeWidth="0.5"
                             strokeLinejoin="round"
@@ -583,7 +598,7 @@ const MapPage = () => {
                         {/* Path Lines */}
                         {isNavigating && pathNodes.length > 1 && (
                             <g>
-                                <polyline points={pathNodes.map(n => `${n.x},${n.y}`).join(' ')} fill="none" stroke="rgba(15, 98, 254, 0.4)" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
+                                <polyline points={pathNodes.map(n => `${n.x},${n.y}`).join(' ')} fill="none" stroke="rgba(99, 102, 241, 0.4)" strokeWidth="1.2" strokeLinejoin="round" strokeLinecap="round" />
                                 <polyline points={pathNodes.map(n => `${n.x},${n.y}`).join(' ')} fill="none" stroke="var(--accent)" strokeWidth="0.6" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="2 2" style={{ animation: 'dash 15s linear infinite' }} />
                             </g>
                         )}
@@ -643,6 +658,11 @@ const MapPage = () => {
                 @keyframes fadeOut {
                     from { opacity: 1; }
                     to { opacity: 0; }
+                }
+                @keyframes pulse {
+                    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+                    70% { transform: scale(1.02); box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+                    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
                 }
             `}</style>
         </div>
