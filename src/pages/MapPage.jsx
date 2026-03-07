@@ -131,6 +131,11 @@ const MapPage = () => {
                 const destNode = MAP_NODES.find(n => n.id === destParam);
                 if (destNode) {
                     setSelectedDestId(destParam);
+
+                    // Auto-start navigation after a short delay so the map has time to adjust
+                    setTimeout(() => {
+                        handleStartNavigation(originParam, destParam);
+                    }, 500);
                 }
             }
         }
@@ -157,10 +162,13 @@ const MapPage = () => {
         return () => window.removeEventListener('message', handler);
     }, []);
 
-    const handleStartNavigation = () => {
-        if (selectedOriginId && selectedDestId) {
-            const origin = MAP_NODES.find(n => n.id === selectedOriginId);
-            const dest = MAP_NODES.find(n => n.id === selectedDestId);
+    const handleStartNavigation = (optOriginId, optDestId) => {
+        const oId = optOriginId || selectedOriginId;
+        const dId = optDestId || selectedDestId;
+
+        if (oId && dId) {
+            const origin = MAP_NODES.find(n => n.id === oId);
+            const dest = MAP_NODES.find(n => n.id === dId);
             if (iframeRef.current && origin && dest) {
                 setIsNavigating(true);
                 iframeRef.current.contentWindow.postMessage({
@@ -368,10 +376,24 @@ const MapPage = () => {
                                 }}>
                                     {MAP_NODES.find(n => n.id === selectedOriginId)?.label} → {MAP_NODES.find(n => n.id === selectedDestId)?.label}
                                 </h3>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-                                    Pas {currentStep + 1} / {routeSteps.length}
-                                    {routeSteps[currentStep] && ` — ${routeSteps[currentStep].label}`}
-                                </p>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
+                                        Pas {currentStep + 1} / {routeSteps.length}
+                                        {routeSteps[currentStep] && ` — ${routeSteps[currentStep].label}`}
+                                    </p>
+                                    {routeSteps.length > 1 && (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '4px',
+                                            background: 'rgba(78, 205, 196, 0.15)', padding: '2px 8px',
+                                            borderRadius: '8px', border: '1px solid rgba(78, 205, 196, 0.3)'
+                                        }}>
+                                            <span style={{ fontSize: '0.7rem' }}>⏱️</span>
+                                            <span style={{ color: '#4ecdc4', fontWeight: 600, fontSize: '0.75rem' }}>
+                                                ETA {Math.max(1, Math.round(15 * (1 - (currentStep / Math.max(1, routeSteps.length - 1)))))} min
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <button
                                 onClick={handleCancelNavigation}
@@ -400,14 +422,18 @@ const MapPage = () => {
                                 {/* Current step display */}
                                 <div style={{
                                     textAlign: 'center', marginBottom: '0.6rem', padding: '0.5rem',
-                                    background: 'rgba(15, 98, 254, 0.15)', borderRadius: '12px',
-                                    border: '1px solid rgba(15, 98, 254, 0.3)'
+                                    background: currentStep === routeSteps.length - 1 ? 'rgba(76, 175, 80, 0.15)' : 'rgba(15, 98, 254, 0.15)',
+                                    borderRadius: '12px',
+                                    border: currentStep === routeSteps.length - 1 ? '1px solid rgba(76, 175, 80, 0.4)' : '1px solid rgba(15, 98, 254, 0.3)'
                                 }}>
-                                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                        Locația curentă
+                                    <p style={{
+                                        color: currentStep === routeSteps.length - 1 ? '#4CAF50' : 'rgba(255,255,255,0.6)',
+                                        fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700
+                                    }}>
+                                        {currentStep === routeSteps.length - 1 ? '🎯 Ai ajuns la destinație' : 'Locația curentă'}
                                     </p>
-                                    <p style={{ color: 'white', fontWeight: 700, fontSize: '1rem' }}>
-                                        📍 {routeSteps[currentStep]?.label || '—'}
+                                    <p style={{ color: 'white', fontWeight: 700, fontSize: '1rem', marginTop: '2px' }}>
+                                        {currentStep === routeSteps.length - 1 ? '✅ ' : '📍 '}{routeSteps[currentStep]?.label || '—'}
                                     </p>
                                 </div>
 
