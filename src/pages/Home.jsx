@@ -64,7 +64,7 @@ const Home = () => {
                     }}
                 >
                     <QrCode size={28} />
-                    Scan QR Code
+                    Scan Flight Ticket
                     {/* Pulse effect wrapper */}
                     <div style={{
                         position: 'absolute',

@@ -270,7 +270,7 @@ const MapPage = () => {
                     {/* Bottom step controls */}
                     {routeSteps.length > 0 && (
                         <div style={{
-                            position: 'absolute', bottom: '5.5rem', left: '1rem', right: '1rem', zIndex: 1000,
+                            position: 'absolute', bottom: '7.5rem', left: '1rem', right: '1rem', zIndex: 1000,
                             animation: 'fadeIn 0.5s ease 0.2s both'
                         }}>
                             <div style={{
