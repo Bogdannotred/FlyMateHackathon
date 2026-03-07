@@ -390,7 +390,7 @@
 
         // --- CUSTOM POI MARKERS ---
         var pois = [
-            { lat: 47.028158, lng: 21.898699, type: 'entrance', icon: 'fa-sign-in-alt', label: 'Intrare' },
+            { lat: 47.028181, lng: 21.898466, type: 'entrance', icon: 'fa-sign-in-alt', label: 'Intrare' },
             { lat: 47.028857, lng: 21.898815, type: 'exit', icon: 'fa-door-closed', label: 'Iesire' },
             { lat: 47.028098, lng: 21.898633, type: 'checkin', icon: 'fa-clipboard-check', label: 'Check-in' },
             { lat: 47.028029, lng: 21.898815, type: 'security', icon: 'fa-shield-alt', label: 'Security' },
@@ -411,7 +411,7 @@
             { lat: 47.028907, lng: 21.899452, type: 'shop', icon: 'fa-shopping-bag', label: 'Magazin haine' },
             { lat: 47.028945, lng: 21.899107, type: 'medical', icon: 'fa-briefcase-medical', label: 'Farmacie' },
             { lat: 47.028381, lng: 21.898922, type: 'elevator', icon: 'fa-layer-group', label: 'Lift' },
-            { lat: 47.028496, lng: 21.899300, type: 'restroom', icon: 'fa-wheelchair', label: 'Disabled restroom 2' },
+            { lat: 47.028503, lng: 21.899389, type: 'restroom', icon: 'fa-wheelchair', label: 'Disabled restroom' },
             { lat: 47.028578, lng: 21.899408, type: 'restroom', icon: 'fa-male', label: 'Men restroom' },
             { lat: 47.028615, lng: 21.899421, type: 'restroom', icon: 'fa-female', label: 'Women restroom' },
             { lat: 47.029046, lng: 21.898225, type: 'parking', icon: 'fa-parking', label: 'Parcare 1' },
@@ -474,7 +474,7 @@
         // Path: Intrare -> wp_A -> wp_B -> wp_C -> wp_D -> gates area
         var allNodes = {
             // === POIs ===
-            'entrance': { lat: 47.028158, lng: 21.898699, label: 'Intrare' },
+            'entrance': { lat: 47.028181, lng: 21.898466, label: 'Intrare' },
             'exit': { lat: 47.028857, lng: 21.898815, label: 'Iesire' },
             'checkin': { lat: 47.028098, lng: 21.898633, label: 'Check-in' },
             'security': { lat: 47.028029, lng: 21.898815, label: 'Security' },
@@ -495,15 +495,18 @@
             'shop': { lat: 47.028907, lng: 21.899452, label: 'Magazin haine' },
             'medical': { lat: 47.028945, lng: 21.899107, label: 'Farmacie' },
             'elevator': { lat: 47.028381, lng: 21.898922, label: 'Lift' },
-            'wc_disabled2': { lat: 47.028496, lng: 21.899300, label: 'Disabled restroom 2' },
+            'wc_disabled2': { lat: 47.028503, lng: 21.899389, label: 'Disabled restroom 2' },
             'wc_men2': { lat: 47.028578, lng: 21.899408, label: 'Men restroom 2' },
             'wc_women2': { lat: 47.028615, lng: 21.899421, label: 'Women restroom 2' },
             'parking1': { lat: 47.029046, lng: 21.898225, label: 'Parcare 1' },
             'parking2': { lat: 47.028237, lng: 21.897828, label: 'Parcare 2' },
 
             // === MAIN CORRIDOR WAYPOINTS (user-provided exact coordinates) ===
-            'wp_WC2': { lat: 47.028780, lng: 21.898889, label: 'Punct 2' },
-            'wp_WC3': { lat: 47.028739, lng: 21.899386, label: 'Punct 3' },
+            'wp_WC1': { lat: 47.028168, lng: 21.898517, label: 'Punct 1 intrare' },
+            'wp_WC2': { lat: 47.028139, lng: 21.898737, label: 'Punct 2 intrare' },
+            'wp_WC3': { lat: 47.028801, lng: 21.898883, label: 'Punct 3 coridor' },
+            'wp_WC4': { lat: 47.028744, lng: 21.899353, label: 'Punct 4 cotitură' },
+            'wp_WC5': { lat: 47.028490, lng: 21.899295, label: 'Punct 5 acces' },
 
             // === OTHER WAYPOINTS ===
             'wp_A': { lat: 47.028142, lng: 21.898729, label: 'Hol principal' },
@@ -520,9 +523,12 @@
         // EDGES: main corridor spine + branches to POIs
         var corridorEdges = [
             // === CUSTOM PATH TO WC DISABLED 2 ===
-            ['entrance', 'wp_WC2'],
+            ['entrance', 'wp_WC1'],
+            ['wp_WC1', 'wp_WC2'],
             ['wp_WC2', 'wp_WC3'],
-            ['wp_WC3', 'wc_disabled2'],
+            ['wp_WC3', 'wp_WC4'],
+            ['wp_WC4', 'wp_WC5'],
+            ['wp_WC5', 'wc_disabled2'],
 
             // === MAIN CORRIDOR SPINE ===
             ['entrance', 'wp_A'],
