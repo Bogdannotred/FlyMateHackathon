@@ -56,8 +56,8 @@ const MapPage = () => {
         setIsNavigating(false);
         setPathNodes([]);
         setCurrentStepIndex(0);
-        // Reset camera to overview
-        setCameraTransform({ x: 50, y: 50, rotate: 0, scale: 1 });
+        // Reset camera to an overview of the right-side building (roughly x=850)
+        setCameraTransform({ x: 850, y: 140, rotate: 0, scale: 2 });
         setUserZoomOffset(0);
         setPanOffset({ x: 0, y: 0 });
     };
@@ -72,7 +72,7 @@ const MapPage = () => {
 
     useEffect(() => {
         if (!isNavigating || pathNodes.length === 0) {
-            setCameraTransform({ x: 50, y: 40, rotate: 0, scale: 1 + userZoomOffset });
+            setCameraTransform({ x: 850, y: 100, rotate: 0, scale: 3 + userZoomOffset });
             return;
         }
 
@@ -85,7 +85,7 @@ const MapPage = () => {
                 x: currentNode.x,
                 y: currentNode.y,
                 rotate: targetRotation,
-                scale: 3.5 // Base zoom
+                scale: 6.5 // Base zoom for large map
             });
         } else {
             setCameraTransform(prev => ({ ...prev, x: currentNode.x, y: currentNode.y }));
@@ -164,17 +164,66 @@ const MapPage = () => {
         const localDy = -dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
 
         setPanOffset(prev => ({
-            x: prev.x - localDx * sensitivity,
-            y: prev.y - localDy * sensitivity
+            x: prev.x - localDx * sensitivity * 10,  // Scale up for 1000px wide map
+            y: prev.y - localDy * sensitivity * 2.8   // Scale up for 280px tall map
         }));
     };
 
     const handleWheel = (e) => {
         const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
-        setUserZoomOffset(prev => Math.max(-2, Math.min(prev + zoomDelta, 4)));
+        setUserZoomOffset(prev => Math.max(-2, Math.min(prev + zoomDelta, 6)));
     };
 
-    const nodes = getNodesAsArray();
+    // Node Dragging Logic for Setup (Dev Mode)
+    const [draggingNodeId, setDraggingNodeId] = useState(null);
+    const [nodePositions, setNodePositions] = useState({});
+
+    // Initialize node positions from graph if empty
+    useEffect(() => {
+        const initialPositions = {};
+        getNodesAsArray().forEach(n => {
+            initialPositions[n.id] = { x: n.x, y: n.y };
+        });
+        setNodePositions(initialPositions);
+    }, []);
+
+    const handleNodePointerDown = (e, id) => {
+        e.stopPropagation(); // prevent map pan
+        setDraggingNodeId(id);
+        setIsDragging(true);
+    };
+
+    const handleScreenPointerMove = (e) => {
+        if (draggingNodeId) {
+            // Very rough screen-to-svg mapping for dragging
+            const svgRect = document.getElementById('airport-svg').getBoundingClientRect();
+
+            // This is complex due to scale and translations, but a rough approximation:
+            const svgX = ((e.clientX - svgRect.left) / svgRect.width) * 1000;
+            const svgY = ((e.clientY - svgRect.top) / svgRect.height) * 280;
+
+            // Realistically we shouldn't map perfectly while zoomed, user should zoom out to 1 to drag safely, or we use a dedicated admin layout
+        }
+    };
+
+    const handleScreenPointerUp = () => {
+        if (draggingNodeId) {
+            const newPos = JSON.stringify(nodePositions, null, 2);
+            console.log("Updated node positions:\n", newPos);
+            setShowNotification("Coordinates printed to console!");
+            setTimeout(() => setShowNotification(false), 3000);
+            setDraggingNodeId(null);
+            setIsDragging(false);
+        }
+    };
+
+    // Add global listener for dropping nodes
+    useEffect(() => {
+        window.addEventListener('pointerup', handleScreenPointerUp);
+        return () => window.removeEventListener('pointerup', handleScreenPointerUp);
+    });
+
+    const nodes = getNodesAsArray().map(n => ({ ...n, ...nodePositions[n.id] }));
 
     // Mock Flight Notifications Pool (30 items)
     const MOCK_NOTIFICATIONS = [
@@ -518,15 +567,26 @@ const MapPage = () => {
             )}
 
 
-            {/* SVG MAP ENGINE */}
+            {/* Custom SVG Map Container */}
             <div style={{
-                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1000px',
+                flex: 1,
+                width: '100%',
+                height: '100%',
+                position: 'relative',
+                backgroundColor: '#9ca3af', // Gray background typical for blueprints
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingTop: '8rem', // push map down slightly away from UI
                 cursor: isDragging ? 'grabbing' : 'grab',
-                touchAction: 'none' // Crucial for mobile dragging
+                touchAction: 'none'
             }}
                 onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
+                onPointerMove={(e) => {
+                    handlePointerMove(e);
+                    handleScreenPointerMove(e);
+                }}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
                 onWheel={handleWheel}
@@ -534,181 +594,67 @@ const MapPage = () => {
                 <div style={{
                     width: '100%', height: '100%', transformOrigin: 'center center',
                     transform: `
-                        scale(${Math.max(0.5, finalScale)}) 
+                        scale(${Math.max(0.2, finalScale)}) 
                         rotate(${isNavigating ? cameraTransform.rotate : 0}deg)
-                        translate(calc(50% - ${cameraTransform.x + panOffset.x}%), calc(50% - ${cameraTransform.y + panOffset.y}%))
+                        translate(calc(50% - ${(cameraTransform.x + panOffset.x) / 10}%), calc(50% - ${(cameraTransform.y + panOffset.y) / 2.8}%))
                     `,
                     transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     willChange: 'transform'
                 }}>
-                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style={{ overflow: 'visible' }}>
+                    <svg
+                        id="airport-svg"
+                        width="100%"
+                        height="100%"
+                        viewBox="0 0 1000 280"
+                        preserveAspectRatio="xMidYMid meet"
+                        style={{ overflow: 'visible' }}
+                    >
                         <defs>
-                            {/* Animated Arrowhead for Path */}
-                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
-                                markerWidth="3" markerHeight="3" orient="auto-start-reverse">
-                                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)" />
+                            <marker id="arrowhead" markerWidth="4" markerHeight="4"
+                                refX="2" refY="2" orient="auto">
+                                <polygon points="0 0, 4 2, 0 4" fill="var(--accent)" />
                             </marker>
-
-                            {/* Floor texture / glow */}
-                            <filter id="zoneGlow">
-                                <feGaussianBlur stdDeviation="0.8" result="blur" />
-                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                                <feMerge>
+                                    <feMergeNode in="coloredBlur" />
+                                    <feMergeNode in="SourceGraphic" />
+                                </feMerge>
                             </filter>
-
-                            {/* 3D Drop Shadow for Objects (Desks, Vending Machines) */}
-                            <filter id="shadow3d" x="-50%" y="-50%" width="200%" height="200%">
-                                <feDropShadow dx="0" dy="0.8" stdDeviation="0.5" floodColor="#000" floodOpacity="0.8" />
-                                <feDropShadow dx="0" dy="1.5" stdDeviation="1" floodColor="#000" floodOpacity="0.4" />
-                            </filter>
-
-                            {/* Blueprint/Tile Grid Pattern for floor realism */}
-                            <pattern id="gridPattern" width="2" height="2" patternUnits="userSpaceOnUse">
-                                <path d="M 2 0 L 0 0 0 2" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
-                            </pattern>
                         </defs>
 
-                        {/* Base grid floor across the whole view */}
-                        <rect x="0" y="0" width="100" height="100" fill="url(#gridPattern)" />
+                        {/* 1. Actual PDF Floor Plan Background */}
+                        <image href="/map_background.png" x="0" y="0" width="1000" height="280" preserveAspectRatio="none" />
 
-                        {/* Main Building Outline - Thick Concrete Walls */}
-                        <path
-                            d="M 10,80 L 10,95 L 90,95 L 90,60 L 70,60 L 70,10 L 10,10 Z"
-                            fill="rgba(20, 22, 28, 0.95)"
-                            stroke="#111"
-                            strokeWidth="1.2"
-                            strokeLinejoin="bevel"
-                        />
-                        {/* Inner stroke for 3D wall effect */}
-                        <path
-                            d="M 10,80 L 10,95 L 90,95 L 90,60 L 70,60 L 70,10 L 10,10 Z"
-                            fill="none"
-                            stroke="rgba(255,255,255,0.1)"
-                            strokeWidth="0.3"
-                        />
-
-                        {/* Zones (Architectural Rooms) */}
-                        {ZONES.map((zone) => (
-                            <g key={zone.id}>
-                                <rect
-                                    x={zone.x}
-                                    y={zone.y}
-                                    width={zone.width}
-                                    height={zone.height}
-                                    fill={zone.color}
-                                    stroke="rgba(255,255,255,0.15)"
-                                    strokeWidth="0.4"
-                                />
-                                {/* Baked-in text for realistic floor decals */}
-                                {zone.label && (
-                                    <text
-                                        x={zone.x + zone.width / 2}
-                                        y={zone.y + zone.height / 2 + 1}
-                                        fontSize="2"
-                                        fill="rgba(255,255,255,0.15)"
-                                        textAnchor="middle"
-                                        fontWeight="700"
-                                        letterSpacing="0.8"
-                                        style={{ userSelect: 'none', mixBlendMode: 'overlay' }}
-                                    >
-                                        {zone.label.toUpperCase()}
-                                    </text>
-                                )}
-                            </g>
-                        ))}
-
-                        {/* Static Floor Decorations (3D Objects & Icons) */}
-                        {DECORATIONS.map((dec) => {
-                            const inverseRotate = isNavigating ? -cameraTransform.rotate : 0;
-                            // Dynamically pick Icon
-                            let IconComponent = null;
-                            if (dec.type === 'desk') IconComponent = Monitor;
-                            if (dec.type === 'scanner') IconComponent = Shield;
-                            if (dec.type === 'shelf') IconComponent = ShoppingBag;
-                            if (dec.type === 'vending' && dec.label === 'Water') IconComponent = Droplets;
-                            if (dec.type === 'vending' && dec.label === 'Cola') IconComponent = Coffee; // Generic drink
-                            if (dec.type === 'table') IconComponent = Utensils;
-
-                            // Scale icon to fit object
-                            const iconSize = dec.width ? Math.min(dec.width, dec.height) * 0.7 : 1.5;
-
-                            if (dec.type === 'plant' || dec.type === 'table') {
-                                return (
-                                    <g key={dec.id}>
-                                        <circle
-                                            cx={dec.x}
-                                            cy={dec.y}
-                                            r={dec.r}
-                                            fill={dec.color}
-                                            stroke="rgba(255,255,255,0.2)"
-                                            strokeWidth="0.15"
-                                            filter="url(#shadow3d)"
-                                        />
-                                        {IconComponent && (
-                                            <g transform={`translate(${dec.x - iconSize / 2}, ${dec.y - iconSize / 2}) rotate(${inverseRotate}, ${iconSize / 2}, ${iconSize / 2})`}>
-                                                <IconComponent size={iconSize} color="rgba(255,255,255,0.8)" strokeWidth={2.5} />
-                                            </g>
-                                        )}
-                                    </g>
-                                );
-                            }
-
-                            // Rectangular decorations (3D Desks, scanners, vending machines)
-                            return (
-                                <g key={dec.id}>
-                                    <rect
-                                        x={dec.x}
-                                        y={dec.y}
-                                        width={dec.width}
-                                        height={dec.height}
-                                        fill={dec.color}
-                                        stroke="rgba(255,255,255,0.3)"
-                                        strokeWidth="0.15"
-                                        opacity={dec.opacity || 1}
-                                        filter={dec.type !== 'door' ? "url(#shadow3d)" : ""}
-                                        rx={0.5} // Slight rounding makes it look like physical furniture
-                                        ry={0.5}
-                                    />
-
-                                    {/* 3D Top Bevel Highlight */}
-                                    {dec.type !== 'door' && (
-                                        <rect x={dec.x + 0.15} y={dec.y + 0.15} width={dec.width - 0.3} height={0.3} fill="rgba(255,255,255,0.3)" />
-                                    )}
-
-                                    {/* Specific intricate details */}
-                                    {dec.type === 'vending' && (
-                                        // Vending machines get a glowing LED glass front
-                                        <rect x={dec.x + 0.3} y={dec.y + 0.3} width={dec.width - 0.6} height={dec.height - 0.6} rx={0.2} fill="rgba(255,255,255,0.2)" />
-                                    )}
-                                    {dec.type === 'scanner' && (
-                                        // Conveyor belt detail on scanners
-                                        <rect x={dec.x + 0.5} y={dec.y} width={1} height={dec.height} fill="#222" />
-                                    )}
-
-                                    {/* Map Marker Icon floating on top of object */}
-                                    {IconComponent && (
-                                        <g transform={`translate(${dec.x + dec.width / 2 - iconSize / 2}, ${dec.y + dec.height / 2 - iconSize / 2}) rotate(${inverseRotate}, ${iconSize / 2}, ${iconSize / 2})`}>
-                                            <IconComponent size={iconSize} color="rgba(255,255,255,0.9)" strokeWidth={2.5} />
-                                        </g>
-                                    )}
-                                </g>
-                            );
-                        })}
-
-                        {/* Static Path Walkways (Subtle connections) */}
+                        {/* 2. Draw all connection edges statically (faint) */}
                         {ORADEA_EDGES.map((edge, idx) => {
-                            const source = ORADEA_NODES[edge.source];
-                            const target = ORADEA_NODES[edge.target];
+                            const source = nodePositions[edge.source] || ORADEA_NODES[edge.source];
+                            const target = nodePositions[edge.target] || ORADEA_NODES[edge.target];
                             return (
                                 <line
                                     key={`edge-${idx}`}
                                     x1={source.x} y1={source.y}
                                     x2={target.x} y2={target.y}
-                                    stroke="rgba(255,255,255,0.06)"
-                                    strokeWidth="2"
+                                    stroke="rgba(0,0,0,0.5)"
+                                    strokeWidth="1.5"
                                     strokeLinecap="round"
                                 />
                             );
                         })}
+
+                        {/* Path Lines */}
+                        {isNavigating && pathNodes.length > 1 && (
+                            <g>
+                                <polyline points={pathNodes.map(n => {
+                                    const pos = nodePositions[n.id] || n;
+                                    return `${pos.x},${pos.y}`;
+                                }).join(' ')} fill="none" stroke="rgba(15, 98, 254, 0.4)" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
+                                <polyline points={pathNodes.map(n => {
+                                    const pos = nodePositions[n.id] || n;
+                                    return `${pos.x},${pos.y}`;
+                                }).join(' ')} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="6 6" style={{ animation: 'dash 15s linear infinite' }} />
+                            </g>
+                        )}
 
                         {/* Path Lines */}
                         {isNavigating && pathNodes.length > 1 && (
@@ -725,19 +671,27 @@ const MapPage = () => {
                             const isDest = node.id === selectedDestId;
                             const isCurrentStep = isNavigating && pathNodes[currentStepIndex]?.id === node.id;
 
-                            // Adjust size inversely to scale so dots don't get massive when zoomed in
-                            const dotRadius = 1.5 / Math.max(1, finalScale * 0.5);
+                            const pos = nodePositions[node.id] || node;
 
-                            let fillColor = 'rgba(255,255,255,0.3)';
+                            // Adjust size inversely to scale so dots don't get massive when zoomed in
+                            const dotRadius = 4 / Math.max(0.5, finalScale * 0.5);
+
+                            let fillColor = 'rgba(255,255,255,0.8)';
+                            let textColor = 'rgba(0,0,0,0.8)';
                             if (isCurrentStep) fillColor = 'var(--primary)';
                             if (isDest) fillColor = 'var(--error)';
 
                             return (
-                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
+                                <g
+                                    key={node.id}
+                                    transform={`translate(${pos.x}, ${pos.y})`}
+                                    onPointerDown={(e) => handleNodePointerDown(e, node.id)}
+                                    style={{ cursor: 'move' }}
+                                >
                                     {(isCurrentStep || isDest || isOrigin) && <circle r={dotRadius * 3} fill={fillColor} opacity="0.3" style={{ animation: 'pulse 2s infinite' }} />}
-                                    <circle r={dotRadius} fill={fillColor} stroke="rgba(0,0,0,0.5)" strokeWidth="0.2" />
+                                    <circle r={dotRadius} fill={fillColor} stroke="rgba(0,0,0,0.8)" strokeWidth="1" />
                                     <g transform={`rotate(${inverseRotate})`}>
-                                        <text x="0" y={-(dotRadius * 2)} fontSize={dotRadius * 1.5} fill={(isCurrentStep || isDest) ? 'white' : 'rgba(255,255,255,0.7)'} textAnchor="middle" fontWeight={(isCurrentStep || isDest) ? '700' : '500'} style={{ userSelect: 'none', textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}>
+                                        <text x="0" y={-(dotRadius * 2)} fontSize={dotRadius * 2} fill={textColor} textAnchor="middle" fontWeight='800' style={{ userSelect: 'none', textShadow: '0px 0px 4px rgba(255,255,255,1)' }}>
                                             {node.label}
                                         </text>
                                     </g>
@@ -747,9 +701,9 @@ const MapPage = () => {
 
                         {/* Current User Marker */}
                         {isNavigating && pathNodes[currentStepIndex] && (
-                            <g transform={`translate(${pathNodes[currentStepIndex].x}, ${pathNodes[currentStepIndex].y})`}>
-                                <circle r={1.5 / Math.max(1, finalScale * 0.5)} fill="white" stroke="var(--primary)" strokeWidth="0.5" />
-                                <polygon points="-1,0 1,0 0,-4" fill="var(--primary)" opacity="0.4" transform={`scale(${1 / Math.max(1, finalScale * 0.5)})`} />
+                            <g transform={`translate(${nodePositions[pathNodes[currentStepIndex].id]?.x || pathNodes[currentStepIndex].x}, ${nodePositions[pathNodes[currentStepIndex].id]?.y || pathNodes[currentStepIndex].y})`}>
+                                <circle r={4 / Math.max(0.5, finalScale * 0.5)} fill="white" stroke="var(--primary)" strokeWidth="1.5" />
+                                <polygon points="-2,0 2,0 0,-8" fill="var(--primary)" opacity="0.8" transform={`scale(${1 / Math.max(0.5, finalScale * 0.5)})`} />
                             </g>
                         )}
                     </svg>
