@@ -21,12 +21,12 @@ const height = maxY - minY;
 const maxDim = Math.max(width, height);
 const norm = (x, y) => {
     const nx = ((x - minX) / maxDim) * 90 + 5;
-    const ny = (1 - ((y - minY) / maxDim)) * 90 + 5; // Invert Y
+    const ny = ((y - minY) / maxDim) * 90 + 5; // Removed Y-invert for aero 2
     return { x: parseFloat(nx.toFixed(2)), y: parseFloat(ny.toFixed(2)) };
 };
 
-// Map nodes according to Y coordinate physical layout from aero 2
-const nodeNames = ['gate3', 'gate4', 'dutyfree', 'entrance', 'checkin', 'gate1', 'gate2', 'security', 'cafe', 'wc'];
+// Map nodes back to their actual geojson order (1 to 10)
+const nodeNames = ['entrance', 'checkin', 'security', 'dutyfree', 'cafe', 'gate1', 'gate2', 'gate3', 'gate4', 'wc'];
 const outNodes = {};
 beaconsObj.features.forEach((f, idx) => {
     const n = norm(f.geometry.coordinates[0], f.geometry.coordinates[1]);
@@ -39,12 +39,12 @@ beaconsObj.features.forEach((f, idx) => {
     outNodes[nName] = { id: nName, label: labelMap[nName] || `Beacon ${f.properties.fid}`, x: n.x, y: n.y };
 });
 
-outNodes['wp_entrance_checkin'] = { id: 'wp_entrance_checkin', label: '', x: 40, y: 76, isWaypoint: true };
-outNodes['wp_checkin_sec'] = { id: 'wp_checkin_sec', label: '', x: 34.28, y: 66.48, isWaypoint: true };
-outNodes['wp_sec_duty'] = { id: 'wp_sec_duty', label: '', x: 32.89, y: 58.05, isWaypoint: true };
-outNodes['wp_duty_gate3'] = { id: 'wp_duty_gate3', label: '', x: 36.67, y: 43.96, isWaypoint: true };
-outNodes['wp_duty_cafe'] = { id: 'wp_duty_cafe', label: '', x: 48.11, y: 53.52, isWaypoint: true };
-outNodes['wp_duty_gate4'] = { id: 'wp_duty_gate4', label: '', x: 50.00, y: 44.97, isWaypoint: true };
+outNodes['wp_entrance_checkin'] = { id: 'wp_entrance_checkin', label: '', x: 40, y: 24, isWaypoint: true };
+outNodes['wp_checkin_sec'] = { id: 'wp_checkin_sec', label: '', x: 34.28, y: 33.52, isWaypoint: true };
+outNodes['wp_sec_duty'] = { id: 'wp_sec_duty', label: '', x: 32.89, y: 41.95, isWaypoint: true };
+outNodes['wp_duty_gate3'] = { id: 'wp_duty_gate3', label: '', x: 36.67, y: 56.04, isWaypoint: true };
+outNodes['wp_duty_cafe'] = { id: 'wp_duty_cafe', label: '', x: 48.11, y: 46.48, isWaypoint: true };
+outNodes['wp_duty_gate4'] = { id: 'wp_duty_gate4', label: '', x: 50.00, y: 55.03, isWaypoint: true };
 
 const lines = releveuObj.features.map(f => f.geometry.coordinates.map(([x, y]) => {
     const n = norm(x, y); return `${n.x},${n.y}`;

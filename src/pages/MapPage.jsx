@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Navigation, QrCode, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, User, Minus } from 'lucide-react';
+import { Navigation, QrCode, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, User, Minus, Coffee, ShieldCheck, DoorOpen, ShoppingBag, BriefcaseMedical, Luggage } from 'lucide-react';
 import { ORADEA_NODES, ORADEA_EDGES, WALL_PATHS, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
 
 const MapPage = () => {
@@ -621,12 +621,20 @@ const MapPage = () => {
                                 <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
                                     {(isCurrentStep || isDest || isOrigin) && <circle r={dotRadius * 3} fill={fillColor} opacity="0.3" style={{ animation: 'pulse 2s infinite' }} />}
 
-                                    {/* Actual Map Pin instead of simple circle */}
+                                    {/* Context-Aware Aero 2 Icons replacing generic pins */}
                                     <g transform={`translate(${-dotRadius * 1.5}, ${-dotRadius * 3}) scale(${dotRadius * 0.15})`}>
                                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fillColor} stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0px 10px 5px rgba(0,0,0,0.5))' }}>
                                             <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
-                                            <circle cx="12" cy="10" r="3" fill="white" />
                                         </svg>
+                                        <g transform="translate(6, 4) scale(0.5)">
+                                            {node.id.startsWith('gate') && <DoorOpen color="white" strokeWidth="2.5" />}
+                                            {node.id === 'security' && <ShieldCheck color="white" strokeWidth="2.5" />}
+                                            {node.id === 'dutyfree' && <ShoppingBag color="white" strokeWidth="2.5" />}
+                                            {node.id === 'cafe' && <Coffee color="white" strokeWidth="2.5" />}
+                                            {node.id === 'checkin' && <Luggage color="white" strokeWidth="2.5" />}
+                                            {node.id === 'entrance' && <DoorOpen color="white" strokeWidth="2.5" />}
+                                            {node.id === 'wc' && <User color="white" strokeWidth="2.5" />}
+                                        </g>
                                     </g>
 
                                     <g transform={`rotate(${inverseRotate})`}>
