@@ -94,16 +94,23 @@ const MapPage = () => {
     const assistTimerRef = useRef(null);
 
     const handleRequestAssistance = () => {
-        if (!assistDest) return;
         setShowAssistPanel(false);
         setAssistActive(true);
         setAssistTimeLeft(120);
+
+        // The assistant comes from a staff location (e.g. security) to the user's CURRENT location
+        // If navigating, use the current step; otherwise use the selected origin
+        const userLoc = (isNavigating && routeSteps.length > 0 && routeSteps[currentStep])
+            ? routeSteps[currentStep].id
+            : (selectedOriginId || 'entrance');
+        setAssistDest(userLoc); // Keep it in state to show in the UI
+
         // Tell the iframe to show the animated assistant dot
         if (iframeRef.current) {
             iframeRef.current.contentWindow.postMessage({
                 type: 'ASSISTANT_ANIMATE',
-                origin: 'security',
-                dest: assistDest,
+                origin: 'security', // Assistant origin
+                dest: userLoc, // Assistant destination (user's location)
                 durationMs: 120000 // 2 minutes
             }, '*');
         }
@@ -165,11 +172,13 @@ const MapPage = () => {
     useEffect(() => {
         const handler = (event) => {
             if (event.data?.type === 'ROUTE_READY') {
-                setRouteSteps(event.data.steps || []);
+                const newSteps = event.data.steps || [];
+                setRouteSteps(newSteps);
                 setCurrentStep(0);
+
                 // Show first step on the map
-                if (event.data.steps?.length > 0) {
-                    const first = event.data.steps[0];
+                if (newSteps.length > 0) {
+                    const first = newSteps[0];
                     setTimeout(() => {
                         iframeRef.current?.contentWindow?.postMessage({
                             type: 'SET_STEP', lat: first.lat, lng: first.lng, label: first.label
@@ -182,36 +191,52 @@ const MapPage = () => {
         return () => window.removeEventListener('message', handler);
     }, []);
 
-    // Simulate dynamic gate change
+    // Simulate dynamic gate change (Gate 5 -> Gate 6)
+    // APPROACH: Both gates share the same corridor. We swap the last step in-place
+    // and tell the iframe to update only the endpoint. currentStep stays untouched.
+    const gateChangeTriggered = useRef(false);
     useEffect(() => {
         let timer;
-        // If navigating to Gate 6, simulate a gate change after 8 seconds
-        if (isNavigating && selectedDestId === 'gate6') {
+        if (isNavigating && selectedDestId === 'gate5' && !gateChangeTriggered.current) {
             timer = setTimeout(() => {
-                setShowNotification('⚠️ ATENȚIE: Zborul tău a fost mutat la Gate 3! Ruta a fost recalculată automat.');
-                setSelectedDestId('gate3');
+                gateChangeTriggered.current = true;
+
+                // Show notification
+                setShowNotification('⚠️ ATENȚIE: Zborul tău a fost mutat la Gate 6! Ruta a fost recalculată automat.');
                 setTimeout(() => setShowNotification(''), 7000);
 
-                // Re-trigger navigation to the new gate
-                if (iframeRef.current && selectedOriginId) {
-                    const origin = MAP_NODES.find(n => n.id === selectedOriginId);
-                    const dest = MAP_NODES.find(n => n.id === 'gate3');
-                    if (origin && dest) {
+                // Update destination in React state
+                setSelectedDestId('gate6');
+
+                // Swap last step in routeSteps from gate5 -> gate6
+                setRouteSteps(prev => {
+                    const updated = [...prev];
+                    if (updated.length > 0) {
+                        const gate6Data = { id: 'gate6', label: 'Gate 6', lat: 47.028445, lng: 21.899117 };
+                        updated[updated.length - 1] = gate6Data;
+                    }
+                    return updated;
+                });
+                // DO NOT touch currentStep — user stays where they are
+
+                // Tell iframe to swap just the destination marker and redraw the line
+                setTimeout(() => {
+                    if (iframeRef.current) {
                         iframeRef.current.contentWindow.postMessage({
-                            type: 'NAVIGATE',
-                            origin: { id: origin.id, label: origin.label },
-                            dest: { id: dest.id, label: dest.label }
+                            type: 'SWAP_DEST',
+                            newDest: { id: 'gate6', label: 'Gate 6', lat: 47.028445, lng: 21.899117 }
                         }, '*');
                     }
-                }
+                }, 100);
             }, 8000);
         }
         return () => clearTimeout(timer);
-    }, [isNavigating, selectedDestId, selectedOriginId]);
+    }, [isNavigating, selectedDestId]);
 
     const handleStartNavigation = (optOriginId, optDestId) => {
-        const oId = optOriginId || selectedOriginId;
-        const dId = optDestId || selectedDestId;
+        // Prevent assigning the React SyntheticEvent to oId if called from onClick
+        const oId = typeof optOriginId === 'string' ? optOriginId : selectedOriginId;
+        const dId = typeof optDestId === 'string' ? optDestId : selectedDestId;
 
         if (oId && dId) {
             const origin = MAP_NODES.find(n => n.id === oId);
@@ -336,7 +361,7 @@ const MapPage = () => {
                 }}>
                     <div ref={originRef} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         <User size={18} color="var(--primary)" />
-                        <div 
+                        <div
                             onClick={() => setIsOriginOpen(!isOriginOpen)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none',
@@ -349,7 +374,7 @@ const MapPage = () => {
                             </span>
                             <span style={{ fontSize: '0.7rem' }}>▼</span>
                         </div>
-                        
+
                         {isOriginOpen && (
                             <div className="custom-scrollbar" style={{
                                 position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.8rem',
@@ -358,7 +383,7 @@ const MapPage = () => {
                                 maxHeight: '220px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)'
                             }}>
                                 {MAP_NODES.map(n => (
-                                    <div 
+                                    <div
                                         key={`org-${n.id}`}
                                         className="dropdown-item"
                                         onClick={() => { setSelectedOriginId(n.id); setIsOriginOpen(false); }}
@@ -374,7 +399,7 @@ const MapPage = () => {
 
                     <div ref={destRef} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         <MapIcon size={18} color={selectedDestId ? 'var(--accent)' : 'var(--text-muted)'} />
-                        <div 
+                        <div
                             onClick={() => setIsDestOpen(!isDestOpen)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none',
@@ -387,7 +412,7 @@ const MapPage = () => {
                             </span>
                             <span style={{ fontSize: '0.7rem' }}>▼</span>
                         </div>
-                        
+
                         {isDestOpen && (
                             <div className="custom-scrollbar" style={{
                                 position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.8rem',
@@ -398,13 +423,13 @@ const MapPage = () => {
                                 {MAP_NODES.map(n => {
                                     const isDisabled = n.id === selectedOriginId;
                                     return (
-                                        <div 
+                                        <div
                                             key={`dest-${n.id}`}
                                             className={`dropdown-item ${isDisabled ? 'disabled' : ''}`}
-                                            onClick={() => { 
+                                            onClick={() => {
                                                 if (!isDisabled) {
-                                                    setSelectedDestId(n.id); 
-                                                    setIsDestOpen(false); 
+                                                    setSelectedDestId(n.id);
+                                                    setIsDestOpen(false);
                                                 }
                                             }}
                                         >
@@ -618,16 +643,17 @@ const MapPage = () => {
             )}
 
             {/* ─── DISABLED HELP BUTTON (bottom right) ─── */}
-            {!isNavigating && !assistActive && (
+            {!assistActive && (
                 <button
                     onClick={() => setShowAssistPanel(!showAssistPanel)}
                     style={{
-                        position: 'absolute', bottom: '7.5rem', right: '1rem', zIndex: 1000,
+                        position: 'absolute', bottom: isNavigating ? '14.5rem' : '7.5rem', right: '1rem', zIndex: 1000,
                         width: '52px', height: '52px', borderRadius: '50%',
                         backgroundColor: '#0f62fe', border: '3px solid white',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         boxShadow: '0 4px 20px rgba(15,98,254,0.5)', cursor: 'pointer',
-                        animation: 'fadeIn 0.3s ease'
+                        animation: 'fadeIn 0.3s ease',
+                        transition: 'bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
                     }}
                 >
                     <Accessibility size={26} color="white" />
@@ -637,7 +663,7 @@ const MapPage = () => {
             {/* ─── ASK FOR ASSISTANCE PANEL ─── */}
             {showAssistPanel && (
                 <div style={{
-                    position: 'absolute', bottom: '11rem', right: '1rem', zIndex: 1001,
+                    position: 'absolute', bottom: isNavigating ? '18rem' : '11rem', right: '1rem', zIndex: 1001,
                     animation: 'fadeIn 0.3s ease'
                 }}>
                     <div style={{
@@ -658,35 +684,23 @@ const MapPage = () => {
                             </button>
                         </div>
                         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', marginBottom: '0.85rem', lineHeight: 1.4 }}>
-                            Select your location and an assistant will come to help you.
+                            Un asistent va veni imediat la locația ta curentă (<strong style={{ color: 'white' }}>
+                                {isNavigating && routeSteps.length > 0 && routeSteps[currentStep]
+                                    ? routeSteps[currentStep].label
+                                    : (selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Intrare')
+                                }</strong>) pentru a te ajuta.
                         </p>
-                        <select
-                            value={assistDest}
-                            onChange={(e) => setAssistDest(e.target.value)}
-                            style={{
-                                width: '100%', padding: '0.7rem 0.75rem', marginBottom: '0.75rem',
-                                backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-                                borderRadius: '12px', color: 'white', fontSize: '0.85rem', outline: 'none',
-                                appearance: 'none'
-                            }}
-                        >
-                            <option value="" disabled style={{ backgroundColor: '#1a1a24', color: '#e2e8f0' }}>Choose your location</option>
-                            {MAP_NODES.map(n => (
-                                <option key={`assist-${n.id}`} value={n.id} style={{ backgroundColor: '#1a1a24', color: '#e2e8f0' }}>{n.label}</option>
-                            ))}
-                        </select>
                         <button
                             onClick={handleRequestAssistance}
-                            disabled={!assistDest}
                             style={{
-                                width: '100%', padding: '0.85rem', backgroundColor: assistDest ? '#0f62fe' : 'rgba(15,98,254,0.3)',
+                                width: '100%', padding: '0.85rem', backgroundColor: '#0f62fe',
                                 border: 'none', borderRadius: '14px', color: 'white',
-                                fontWeight: 700, fontSize: '0.95rem', cursor: assistDest ? 'pointer' : 'default',
+                                fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
                                 boxShadow: '0 4px 16px rgba(15,98,254,0.4)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
                             }}
                         >
-                            <Accessibility size={20} /> Ask for Assistance
+                            <Accessibility size={20} /> Cere Asistență
                         </button>
                     </div>
                 </div>

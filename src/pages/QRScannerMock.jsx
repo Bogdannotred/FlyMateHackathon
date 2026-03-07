@@ -41,10 +41,10 @@ const QRScannerMock = () => {
             }
 
             if (ORADEA_NODES[scannedId]) {
-                navigate(`/map?scanned=true&origin=${scannedId}&dest=gate6`);
+                navigate(`/map?scanned=true&origin=${scannedId}&dest=gate5`);
             } else {
                 console.warn(`Node ${scannedId} not found in map graph.`);
-                navigate('/map?scanned=true&origin=entrance&dest=gate6');
+                navigate('/map?scanned=true&origin=entrance&dest=gate5');
             }
         }
     };

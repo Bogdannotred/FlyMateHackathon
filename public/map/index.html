@@ -738,6 +738,30 @@
                 setCurrentStep(event.data.lat, event.data.lng, event.data.label);
             }
 
+            if (event.data.type === 'SWAP_DEST') {
+                // Update last coordinate without full re-navigation
+                var nd = event.data.newDest;
+                if (nd && currentRouteCoords.length > 0) {
+                    // Swap last coord
+                    currentRouteCoords[currentRouteCoords.length - 1] = {
+                        lat: nd.lat, lng: nd.lng, id: nd.id, label: nd.label
+                    };
+
+                    var latLngs = currentRouteCoords.map(function (c) { return [c.lat, c.lng]; });
+
+                    // Redraw polylines
+                    if (routeGlowLayer) routeGlowLayer.setLatLngs(latLngs);
+                    if (routeLayer) routeLayer.setLatLngs(latLngs);
+
+                    // Move end marker (last marker in routeMarkers)
+                    if (routeMarkers.length >= 2) {
+                        var endMarker = routeMarkers[routeMarkers.length - 1];
+                        endMarker.setLatLng([nd.lat, nd.lng]);
+                        endMarker.setPopupContent('<b style="color:#e74c3c;">🎯 Destinație: ' + nd.label + '</b>');
+                    }
+                }
+            }
+
             if (event.data.type === 'CLEAR_ROUTE') {
                 clearRoute();
                 map.fitBounds([[47.027689, 21.897300], [47.029601, 21.899700]]);
