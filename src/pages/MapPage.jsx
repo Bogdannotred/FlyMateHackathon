@@ -9,6 +9,7 @@ const MapPage = () => {
     const queryParams = new URLSearchParams(location.search);
     const scanned = queryParams.get('scanned');
     const originParam = queryParams.get('origin');
+    const scannedFlight = queryParams.get('flight'); // Get flight from URL if scanned ticket
 
     const [originNode, setOriginNode] = useState(null);
     const [destinationNode, setDestinationNode] = useState(null);
@@ -19,6 +20,9 @@ const MapPage = () => {
 
     const [pathNodes, setPathNodes] = useState([]);
     const [showNotification, setShowNotification] = useState(false);
+    
+    // Flight Notification State
+    const [activeAlerts, setActiveAlerts] = useState([]);
 
     // Initialize from URL params if arrived via Scanner
     useEffect(() => {
@@ -58,6 +62,74 @@ const MapPage = () => {
 
     const isNavigating = pathNodes.length > 0;
     const nodes = getNodesAsArray();
+
+    // Mock Flight Notifications Pool (30 items)
+    const MOCK_NOTIFICATIONS = [
+        { type: 'general', msg: 'Welcome to Oradea Airport. Ensure you keep your luggage unattended.' },
+        { type: 'general', msg: 'Security wait time is currently 5 minutes.' },
+        { type: 'general', msg: 'Duty Free special: 20% off all fragrances today.' },
+        { type: 'flight', flight: 'FR123', msg: 'Flight FR123 to London is now boarding at Gate 2.' },
+        { type: 'flight', flight: 'RO456', msg: 'Flight RO456 to Bucharest is delayed by 20 mins.' },
+        { type: 'flight', flight: 'FR789', msg: 'Gate Change! Flight FR789 will now depart from Gate 4.' },
+        { type: 'flight', flight: 'LH111', msg: 'Last call for flight LH111 to Munich. Proceed to Gate 1 immediately.' },
+        { type: 'general', msg: 'Please have your boarding passes ready before Security.' },
+        { type: 'flight', flight: 'FR123', msg: 'Flight FR123 London boarding closing in 5 minutes.' },
+        { type: 'flight', flight: 'W6321', msg: 'Flight W6321 to Milan is now boarding at Gate 3.' },
+        { type: 'general', msg: 'Lost and Found is located near the Main Entrance.' },
+        { type: 'flight', flight: 'RO456', msg: 'Flight RO456 is now ready for check-in at Desks 1-3.' },
+        { type: 'flight', flight: 'FR789', msg: 'Flight FR789 luggage drop is open.' },
+        { type: 'flight', flight: 'LH111', msg: 'Flight LH111 Munich is delayed.' },
+        { type: 'general', msg: 'Starbucks is offering a free cookie with any large coffee.' },
+        { type: 'general', msg: 'Airport Wi-Fi is free for 60 minutes. Connect to "OradeaFreeWiFi".' },
+        { type: 'flight', flight: 'FR123', msg: 'Gate update: FR123 will depart from Gate 1.' },
+        { type: 'flight', flight: 'W6321', msg: 'Flight W6321 check-in closing in 15 minutes.' },
+        { type: 'general', msg: 'Smoking is only permitted in designated areas outside Terminal 1.' },
+        { type: 'flight', flight: 'RO456', msg: 'Flight RO456 boarding will commence shortly.' },
+        { type: 'flight', flight: 'FR789', msg: 'Flight FR789 is boarding.' },
+        { type: 'flight', flight: 'LH111', msg: 'Flight LH111 gate changed to Gate 2.' },
+        { type: 'general', msg: 'Restrooms are located near Duty Free and the Main Gates.' },
+        { type: 'flight', flight: 'FR123', msg: 'Flight FR123 now accepting Priority Boarding.' },
+        { type: 'flight', flight: 'W6321', msg: 'Flight W6321 boarding complete.' },
+        { type: 'general', msg: 'Please report any suspicious packages to airport security.' },
+        { type: 'flight', flight: 'RO456', msg: 'Final boarding call for RO456.' },
+        { type: 'flight', flight: 'FR789', msg: 'Flight FR789 delayed due to weather.' },
+        { type: 'flight', flight: 'LH111', msg: 'Flight LH111 now boarding all groups.' },
+        { type: 'general', msg: 'Taxis are available outside the Main Terminal.' }
+    ];
+
+    // Notification Effect - pops one up every 25 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // Filter valid notifications based on whether we have a scanned ticket
+            const validNotifs = MOCK_NOTIFICATIONS.filter(n => {
+                if (!scannedFlight) return true; // Without a ticket, show everything
+                return n.type === 'general' || n.flight === scannedFlight; // If ticket, show only general or this flight
+            });
+
+            if (validNotifs.length > 0) {
+                const randomIndex = Math.floor(Math.random() * validNotifs.length);
+                const newAlert = { ...validNotifs[randomIndex], id: Date.now() };
+                
+                // Add to active alerts, keep max 3 on screen
+                setActiveAlerts(prev => {
+                    const next = [...prev, newAlert];
+                    if (next.length > 3) return next.slice(1);
+                    return next;
+                });
+
+                // Auto dismiss after 10s
+                setTimeout(() => {
+                    setActiveAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                }, 10000);
+            }
+        }, 25000); // 25 seconds
+
+        return () => clearInterval(interval);
+    }, [scannedFlight]);
+
+    const dismissAlert = (id) => {
+        setActiveAlerts(prev => prev.filter(a => a.id !== id));
+    };
 
     return (
         <div style={{
@@ -220,6 +292,51 @@ const MapPage = () => {
                 </div>
             )}
 
+            {/* Flight Notifications Area (Top Middle Over Map) */}
+            <div style={{
+                position: 'absolute',
+                top: '70px', 
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 40,
+                display: 'flex',
+                flexDirection: 'column-reverse', // new stack on bottom if needed, or normal stack
+                gap: '0.5rem',
+                width: '90%',
+                maxWidth: '400px',
+                pointerEvents: 'none' // lets clicks pass through to map if needed
+            }}>
+                {activeAlerts.map(alert => (
+                    <div key={alert.id} className="glass-panel" style={{
+                        padding: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '1rem',
+                        backgroundColor: alert.type === 'flight' ? 'rgba(15, 98, 254, 0.9)' : 'rgba(30,30,30,0.9)',
+                        border: alert.type === 'flight' ? '1px solid var(--primary-hover)' : '1px solid var(--border)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                        animation: 'slideDown 0.4s ease-out, fadeOut 0.4s ease-in 9.6s forwards',
+                        pointerEvents: 'auto'
+                    }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: alert.type === 'flight' ? '#e6f0ff' : 'var(--accent)', textTransform: 'uppercase' }}>
+                                {alert.type === 'general' ? 'ℹ️ Airport Info' : `✈️ Flight ${alert.flight}`}
+                            </span>
+                            <span style={{ fontSize: '0.9rem', color: 'white', lineHeight: '1.4' }}>
+                                {alert.msg}
+                            </span>
+                        </div>
+                        <button 
+                            onClick={() => dismissAlert(alert.id)}
+                            style={{ background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', padding: '0.25rem' }}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                ))}
+            </div>
+
             {/* Custom SVG Map Container */}
             <div style={{
                 flex: 1,
@@ -378,6 +495,14 @@ const MapPage = () => {
               to {
                   stroke-dashoffset: -100;
               }
+          }
+          @keyframes slideDown {
+              from { opacity: 0; transform: translateY(-20px); }
+              to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes fadeOut {
+              from { opacity: 1; }
+              to { opacity: 0; }
           }
       `}</style>
 
