@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Navigation, QrCode, User, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, Minus, Coffee, Monitor, Shield, ShoppingBag, Droplets, Utensils } from 'lucide-react';
-import { ORADEA_NODES, ORADEA_EDGES, ZONES, DECORATIONS, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
+import { ORADEA_NODES, ORADEA_EDGES, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
 
 const MapPage = () => {
     const navigate = useNavigate();
