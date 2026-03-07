@@ -501,12 +501,17 @@
             'parking1': { lat: 47.029046, lng: 21.898225, label: 'Parcare 1' },
             'parking2': { lat: 47.028237, lng: 21.897828, label: 'Parcare 2' },
 
-            // === MAIN CORRIDOR WAYPOINTS (user-provided exact coordinates) ===
-            'wp_WC1': { lat: 47.028168, lng: 21.898517, label: 'Punct 1 intrare' },
-            'wp_WC2': { lat: 47.028139, lng: 21.898737, label: 'Punct 2 intrare' },
-            'wp_WC3': { lat: 47.028801, lng: 21.898883, label: 'Punct 3 coridor' },
-            'wp_WC4': { lat: 47.028744, lng: 21.899353, label: 'Punct 4 cotitură' },
-            'wp_WC5': { lat: 47.028490, lng: 21.899295, label: 'Punct 5 acces' },
+            // === WAYPOINTS: Security -> Disabled restroom 2 ===
+            'wp_SD1': { lat: 47.028035, lng: 21.898762, label: '' },
+            'wp_SD2': { lat: 47.028061, lng: 21.898738, label: '' },
+            'wp_SD3': { lat: 47.028101, lng: 21.898744, label: '' },
+            'wp_SD4': { lat: 47.028166, lng: 21.898750, label: '' },
+            'wp_SD5': { lat: 47.028248, lng: 21.898774, label: '' },
+            'wp_SD6': { lat: 47.028599, lng: 21.898863, label: '' },
+            'wp_SD7': { lat: 47.028768, lng: 21.898913, label: '' },
+            'wp_SD8': { lat: 47.028735, lng: 21.899140, label: '' },
+            'wp_SD9': { lat: 47.028709, lng: 21.899330, label: '' },
+            'wp_SD10': { lat: 47.028611, lng: 21.899377, label: '' },
 
             // === OTHER WAYPOINTS ===
             'wp_A': { lat: 47.028142, lng: 21.898729, label: 'Hol principal' },
@@ -522,13 +527,18 @@
 
         // EDGES: main corridor spine + branches to POIs
         var corridorEdges = [
-            // === CUSTOM PATH TO WC DISABLED 2 ===
-            ['entrance', 'wp_WC1'],
-            ['wp_WC1', 'wp_WC2'],
-            ['wp_WC2', 'wp_WC3'],
-            ['wp_WC3', 'wp_WC4'],
-            ['wp_WC4', 'wp_WC5'],
-            ['wp_WC5', 'wc_disabled2'],
+            // === PATH: Security -> Disabled restroom 2 ===
+            ['security', 'wp_SD1'],
+            ['wp_SD1', 'wp_SD2'],
+            ['wp_SD2', 'wp_SD3'],
+            ['wp_SD3', 'wp_SD4'],
+            ['wp_SD4', 'wp_SD5'],
+            ['wp_SD5', 'wp_SD6'],
+            ['wp_SD6', 'wp_SD7'],
+            ['wp_SD7', 'wp_SD8'],
+            ['wp_SD8', 'wp_SD9'],
+            ['wp_SD9', 'wp_SD10'],
+            ['wp_SD10', 'wc_disabled2'],
 
             // === MAIN CORRIDOR SPINE ===
             ['entrance', 'wp_A'],
@@ -552,7 +562,6 @@
 
             // === POIs branching off wp_C (east turn) ===
             ['wp_C', 'shop'],             // shop is east-upper
-            ['wp_C', 'wc_disabled2'],     // upper restrooms east
             ['wp_C', 'wc_men2'],
             ['wp_C', 'wc_women2'],
 
@@ -690,11 +699,11 @@
 
             // Send path info back to parent for step navigation
             var steps = [];
+            var stepNum = 0;
             currentRouteCoords.forEach(function (c) {
-                // Include nodes that have a label (either POIs or labeled waypoints)
-                if (c.label) {
-                    steps.push({ id: c.id, label: c.label, lat: c.lat, lng: c.lng });
-                }
+                stepNum++;
+                var lbl = c.label || ('Pas ' + stepNum);
+                steps.push({ id: c.id, label: lbl, lat: c.lat, lng: c.lng });
             });
             window.parent.postMessage({ type: 'ROUTE_READY', steps: steps, totalCoords: currentRouteCoords.length }, '*');
         }
