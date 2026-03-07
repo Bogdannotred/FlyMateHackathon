@@ -742,7 +742,109 @@
                 clearRoute();
                 map.fitBounds([[47.026219517431954, 21.89437910068521], [47.03068316676018, 21.905130503808042]]);
             }
+
+            if (event.data.type === 'ASSISTANT_ANIMATE') {
+                startAssistantAnimation(event.data.origin, event.data.dest, event.data.durationMs || 120000);
+            }
+
+            if (event.data.type === 'ASSISTANT_CLEAR') {
+                clearAssistant();
+            }
         });
+
+        // --- ASSISTANT DOT ANIMATION ---
+        var assistantMarker = null;
+        var assistantRouteLayer = null;
+        var assistantGlowLayer = null;
+        var assistantAnimFrame = null;
+
+        function clearAssistant() {
+            if (assistantMarker) { map.removeLayer(assistantMarker); assistantMarker = null; }
+            if (assistantRouteLayer) { map.removeLayer(assistantRouteLayer); assistantRouteLayer = null; }
+            if (assistantGlowLayer) { map.removeLayer(assistantGlowLayer); assistantGlowLayer = null; }
+            if (assistantAnimFrame) { cancelAnimationFrame(assistantAnimFrame); assistantAnimFrame = null; }
+        }
+
+        function startAssistantAnimation(originId, destId, durationMs) {
+            clearAssistant();
+
+            var pathIds = findCorridorPath(originId, destId);
+            if (pathIds.length === 0) return;
+
+            var coords = pathIds.map(function (id) {
+                var n = allNodes[id];
+                return [n.lat, n.lng];
+            });
+
+            // Draw route line
+            assistantGlowLayer = L.polyline(coords, {
+                color: '#0f62fe', weight: 10, opacity: 0.2,
+                lineCap: 'round', lineJoin: 'round'
+            }).addTo(map);
+
+            assistantRouteLayer = L.polyline(coords, {
+                color: '#0f62fe', weight: 4, opacity: 0.7,
+                dashArray: '8 6', lineCap: 'round', lineJoin: 'round'
+            }).addTo(map);
+
+            // Calculate segment distances for interpolation
+            var segDists = [];
+            var totalDist = 0;
+            for (var i = 1; i < coords.length; i++) {
+                var dx = coords[i][0] - coords[i - 1][0];
+                var dy = coords[i][1] - coords[i - 1][1];
+                var d = Math.sqrt(dx * dx + dy * dy);
+                segDists.push(d);
+                totalDist += d;
+            }
+
+            // Create assistant marker (blue dot)
+            var assistIcon = L.divIcon({
+                className: '',
+                html: '<div style="width:24px;height:24px;background:#0f62fe;border:3px solid white;border-radius:50%;box-shadow:0 0 18px rgba(15,98,254,0.8),0 2px 8px rgba(0,0,0,0.5);animation:pulse 1.5s infinite;"></div>',
+                iconSize: [24, 24], iconAnchor: [12, 12]
+            });
+            assistantMarker = L.marker(coords[0], { icon: assistIcon, zIndexOffset: 3000 }).addTo(map);
+            assistantMarker.bindPopup('<b style="color:#0f62fe;">🔵 Assistant</b>');
+
+            // Fit bounds to see the route
+            map.fitBounds(L.latLngBounds(coords), { padding: [60, 60], maxZoom: 19 });
+
+            // Animate over durationMs
+            var startTime = performance.now();
+
+            function animate(now) {
+                var elapsed = now - startTime;
+                var progress = Math.min(elapsed / durationMs, 1);
+
+                // Find position along the path
+                var targetDist = progress * totalDist;
+                var accumulated = 0;
+                var pos = coords[0];
+                for (var j = 0; j < segDists.length; j++) {
+                    if (accumulated + segDists[j] >= targetDist) {
+                        var segProgress = (targetDist - accumulated) / segDists[j];
+                        pos = [
+                            coords[j][0] + (coords[j + 1][0] - coords[j][0]) * segProgress,
+                            coords[j][1] + (coords[j + 1][1] - coords[j][1]) * segProgress
+                        ];
+                        break;
+                    }
+                    accumulated += segDists[j];
+                    pos = coords[j + 1];
+                }
+
+                if (assistantMarker) {
+                    assistantMarker.setLatLng(pos);
+                }
+
+                if (progress < 1) {
+                    assistantAnimFrame = requestAnimationFrame(animate);
+                }
+            }
+
+            assistantAnimFrame = requestAnimationFrame(animate);
+        }
 
         // Pulse animation
         var pulseStyle = document.createElement('style');

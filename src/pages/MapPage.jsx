@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Navigation, QrCode, Map as MapIcon, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Navigation, QrCode, Map as MapIcon, User, ChevronLeft, ChevronRight, Accessibility, X } from 'lucide-react';
 
 // ─── POI data matching the map/index.html POIs ───
 const MAP_NODES = [
@@ -38,6 +38,7 @@ const MapPage = () => {
     const queryParams = new URLSearchParams(location.search);
     const scanned = queryParams.get('scanned');
     const originParam = queryParams.get('origin');
+    const destParam = queryParams.get('dest');
     const iframeRef = useRef(null);
 
     const [selectedOriginId, setSelectedOriginId] = useState('');
@@ -49,6 +50,75 @@ const MapPage = () => {
     const [routeSteps, setRouteSteps] = useState([]);
     const [currentStep, setCurrentStep] = useState(0);
 
+    // Departure countdown (3 hours = 10800 seconds)
+    const [departureTime, setDepartureTime] = useState(10800);
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setDepartureTime(prev => (prev > 0 ? prev - 1 : 0));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+    const formatDeparture = (s) => {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        return `${h}:${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    };
+
+    // Disabled assistance state
+    const [showAssistPanel, setShowAssistPanel] = useState(false);
+    const [assistActive, setAssistActive] = useState(false);
+    const [assistTimeLeft, setAssistTimeLeft] = useState(120); // 2 minutes in seconds
+    const [assistDest, setAssistDest] = useState(''); // where the assistant should come
+    const [assistArrived, setAssistArrived] = useState(false);
+    const assistTimerRef = useRef(null);
+
+    const handleRequestAssistance = () => {
+        if (!assistDest) return;
+        setShowAssistPanel(false);
+        setAssistActive(true);
+        setAssistTimeLeft(120);
+        // Tell the iframe to show the animated assistant dot
+        if (iframeRef.current) {
+            iframeRef.current.contentWindow.postMessage({
+                type: 'ASSISTANT_ANIMATE',
+                origin: 'security',
+                dest: assistDest,
+                durationMs: 120000 // 2 minutes
+            }, '*');
+        }
+        // Start countdown
+        if (assistTimerRef.current) clearInterval(assistTimerRef.current);
+        assistTimerRef.current = setInterval(() => {
+            setAssistTimeLeft(prev => {
+                if (prev <= 1) {
+                    clearInterval(assistTimerRef.current);
+                    setAssistActive(false);
+                    setAssistArrived(true);
+                    setTimeout(() => setAssistArrived(false), 6000);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleCancelAssistance = () => {
+        setAssistActive(false);
+        setAssistArrived(false);
+        setAssistTimeLeft(120);
+        if (assistTimerRef.current) clearInterval(assistTimerRef.current);
+        if (iframeRef.current) {
+            iframeRef.current.contentWindow.postMessage({ type: 'ASSISTANT_CLEAR' }, '*');
+        }
+    };
+
+    const formatTime = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m}:${sec.toString().padStart(2, '0')}`;
+    };
+
     useEffect(() => {
         if (scanned === 'true' && originParam) {
             const node = MAP_NODES.find(n => n.id === originParam);
@@ -57,8 +127,14 @@ const MapPage = () => {
                 setShowNotification(`📍 Localizat: ${node.label}`);
                 setTimeout(() => setShowNotification(''), 4000);
             }
+            if (destParam) {
+                const destNode = MAP_NODES.find(n => n.id === destParam);
+                if (destNode) {
+                    setSelectedDestId(destParam);
+                }
+            }
         }
-    }, [scanned, originParam]);
+    }, [scanned, originParam, destParam]);
 
     // Listen for ROUTE_READY from iframe
     useEffect(() => {
@@ -132,6 +208,49 @@ const MapPage = () => {
             display: 'flex', flexDirection: 'column', flex: 1,
             backgroundColor: '#0a0a0c', position: 'relative', overflow: 'hidden', minHeight: '100vh'
         }} className="animate-fade-in">
+
+            {/* Departure Countdown - Modern Floating Card (only after QR scan) */}
+            {scanned === 'true' && !isNavigating && !assistActive && (
+                <div style={{
+                    position: 'absolute', bottom: '7.5rem', left: '1rem', zIndex: 1002,
+                    animation: 'fadeIn 0.5s ease'
+                }}>
+                    <div style={{
+                        backgroundColor: 'rgba(15, 15, 20, 0.92)', backdropFilter: 'blur(24px)',
+                        border: `1.5px solid ${departureTime < 1800 ? 'rgba(239, 68, 68, 0.6)' : 'rgba(78, 205, 196, 0.3)'}`,
+                        borderRadius: '18px', padding: '0.65rem 1rem',
+                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        boxShadow: departureTime < 1800
+                            ? '0 4px 24px rgba(239,68,68,0.35), inset 0 0 20px rgba(239,68,68,0.05)'
+                            : '0 4px 24px rgba(0,0,0,0.5), inset 0 0 20px rgba(78,205,196,0.03)'
+                    }}>
+                        <div style={{
+                            width: '40px', height: '40px', borderRadius: '12px',
+                            background: departureTime < 1800
+                                ? 'linear-gradient(135deg, rgba(239,68,68,0.3), rgba(239,68,68,0.1))'
+                                : 'linear-gradient(135deg, rgba(78,205,196,0.3), rgba(15,98,254,0.15))',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                        }}>
+                            <span style={{ fontSize: '1.2rem' }}>✈️</span>
+                        </div>
+                        <div>
+                            <p style={{
+                                color: 'rgba(255,255,255,0.45)', fontSize: '0.6rem',
+                                textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '2px'
+                            }}>
+                                Time to Departure
+                            </p>
+                            <p style={{
+                                color: departureTime < 1800 ? '#ef4444' : '#4ecdc4',
+                                fontWeight: 800, fontSize: '1.2rem', fontFamily: "'Courier New', monospace",
+                                lineHeight: 1, letterSpacing: '0.05em'
+                            }}>
+                                {formatDeparture(departureTime)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Notification */}
             {showNotification && (
@@ -342,6 +461,173 @@ const MapPage = () => {
                 </>
             )}
 
+            {/* ─── ASSISTANT ARRIVED BUBBLE ─── */}
+            {assistArrived && (
+                <div style={{
+                    position: 'absolute', top: '2rem', left: '1.5rem', right: '1.5rem', zIndex: 1100,
+                    animation: 'fadeIn 0.4s ease'
+                }}>
+                    <div style={{
+                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(78, 205, 196, 0.5)', borderRadius: '20px',
+                        padding: '1.25rem', textAlign: 'center',
+                        boxShadow: '0 8px 32px rgba(78, 205, 196, 0.3)'
+                    }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✅</div>
+                        <h3 style={{ color: '#4ecdc4', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.4rem' }}>
+                            Assistant Arrived!
+                        </h3>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                            Your assistant has arrived at {MAP_NODES.find(n => n.id === assistDest)?.label || 'the destination'}.
+                        </p>
+                        <button
+                            onClick={() => setAssistArrived(false)}
+                            style={{
+                                marginTop: '0.75rem', padding: '0.6rem 1.5rem',
+                                backgroundColor: '#4ecdc4', border: 'none', borderRadius: '12px',
+                                color: '#000', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer'
+                            }}
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── DISABLED HELP BUTTON (bottom right) ─── */}
+            {!isNavigating && !assistActive && (
+                <button
+                    onClick={() => setShowAssistPanel(!showAssistPanel)}
+                    style={{
+                        position: 'absolute', bottom: '7.5rem', right: '1rem', zIndex: 1000,
+                        width: '52px', height: '52px', borderRadius: '50%',
+                        backgroundColor: '#0f62fe', border: '3px solid white',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        boxShadow: '0 4px 20px rgba(15,98,254,0.5)', cursor: 'pointer',
+                        animation: 'fadeIn 0.3s ease'
+                    }}
+                >
+                    <Accessibility size={26} color="white" />
+                </button>
+            )}
+
+            {/* ─── ASK FOR ASSISTANCE PANEL ─── */}
+            {showAssistPanel && (
+                <div style={{
+                    position: 'absolute', bottom: '11rem', right: '1rem', zIndex: 1001,
+                    animation: 'fadeIn 0.3s ease'
+                }}>
+                    <div style={{
+                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
+                        padding: '1.25rem', width: '240px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Accessibility size={20} color="#0f62fe" />
+                                <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Disabled Help</span>
+                            </div>
+                            <button onClick={() => setShowAssistPanel(false)} style={{
+                                background: 'none', border: 'none', cursor: 'pointer', padding: '2px'
+                            }}>
+                                <X size={18} color="rgba(255,255,255,0.5)" />
+                            </button>
+                        </div>
+                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', marginBottom: '0.85rem', lineHeight: 1.4 }}>
+                            Select your location and an assistant will come to help you.
+                        </p>
+                        <select
+                            value={assistDest}
+                            onChange={(e) => setAssistDest(e.target.value)}
+                            style={{
+                                width: '100%', padding: '0.7rem 0.75rem', marginBottom: '0.75rem',
+                                backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
+                                borderRadius: '12px', color: 'white', fontSize: '0.85rem', outline: 'none',
+                                appearance: 'none'
+                            }}
+                        >
+                            <option value="" disabled style={{ backgroundColor: '#1a1a24', color: '#e2e8f0' }}>Choose your location</option>
+                            {MAP_NODES.map(n => (
+                                <option key={`assist-${n.id}`} value={n.id} style={{ backgroundColor: '#1a1a24', color: '#e2e8f0' }}>{n.label}</option>
+                            ))}
+                        </select>
+                        <button
+                            onClick={handleRequestAssistance}
+                            disabled={!assistDest}
+                            style={{
+                                width: '100%', padding: '0.85rem', backgroundColor: assistDest ? '#0f62fe' : 'rgba(15,98,254,0.3)',
+                                border: 'none', borderRadius: '14px', color: 'white',
+                                fontWeight: 700, fontSize: '0.95rem', cursor: assistDest ? 'pointer' : 'default',
+                                boxShadow: '0 4px 16px rgba(15,98,254,0.4)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                            }}
+                        >
+                            <Accessibility size={20} /> Ask for Assistance
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── ASSISTANT ETA TOP BAR ─── */}
+            {assistActive && (
+                <div style={{
+                    position: 'absolute', top: '1rem', left: '1rem', right: '1rem', zIndex: 1001,
+                    animation: 'fadeIn 0.5s ease'
+                }}>
+                    <div style={{
+                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
+                        padding: '1rem', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{
+                                backgroundColor: '#0f62fe', borderRadius: '50%', width: '44px', height: '44px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                animation: 'pulse 1.5s infinite'
+                            }}>
+                                <Accessibility color="white" size={24} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', marginBottom: '2px' }}>
+                                    🚶 Assistant on the way
+                                </h3>
+                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
+                                    Security → {MAP_NODES.find(n => n.id === assistDest)?.label || 'Your location'}
+                                </p>
+                            </div>
+                            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                                <p style={{ color: '#4ecdc4', fontWeight: 800, fontSize: '1.4rem', lineHeight: 1 }}>
+                                    {formatTime(assistTimeLeft)}
+                                </p>
+                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', marginTop: '2px' }}>ETA</p>
+                            </div>
+                            <button
+                                onClick={handleCancelAssistance}
+                                style={{
+                                    padding: '0.4rem 0.8rem', backgroundColor: 'transparent',
+                                    border: '1px solid var(--error)', borderRadius: '12px',
+                                    color: 'var(--error)', fontWeight: 600, fontSize: '0.75rem', flexShrink: 0, cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                        {/* Progress bar */}
+                        <div style={{
+                            height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px',
+                            marginTop: '0.75rem', overflow: 'hidden'
+                        }}>
+                            <div style={{
+                                height: '100%', background: 'linear-gradient(90deg, #0f62fe, #4ecdc4)',
+                                borderRadius: '2px', transition: 'width 1s linear',
+                                width: `${((120 - assistTimeLeft) / 120) * 100}%`
+                            }} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ─── EMBEDDED MAP (map/index.html) ─── */}
             <iframe
                 ref={iframeRef}
@@ -358,6 +644,11 @@ const MapPage = () => {
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.15); }
+                    100% { transform: scale(1); }
                 }
             `}</style>
         </div>
