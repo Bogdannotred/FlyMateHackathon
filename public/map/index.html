@@ -129,7 +129,7 @@
     <script>
         var map = L.map('map', {
             zoomControl: false, maxZoom: 28, minZoom: 1
-        }).fitBounds([[47.026219517431954, 21.89437910068521], [47.03068316676018, 21.905130503808042]]);
+        }).fitBounds([[47.027689, 21.897300], [47.029601, 21.899700]]);
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
         var autolinker = new Autolinker({ truncate: { length: 30, location: 'smart' } });
@@ -740,7 +740,7 @@
 
             if (event.data.type === 'CLEAR_ROUTE') {
                 clearRoute();
-                map.fitBounds([[47.026219517431954, 21.89437910068521], [47.03068316676018, 21.905130503808042]]);
+                map.fitBounds([[47.027689, 21.897300], [47.029601, 21.899700]]);
             }
 
             if (event.data.type === 'ASSISTANT_ANIMATE') {

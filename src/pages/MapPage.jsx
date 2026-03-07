@@ -46,6 +46,26 @@ const MapPage = () => {
     const [isNavigating, setIsNavigating] = useState(false);
     const [showNotification, setShowNotification] = useState('');
 
+    // Custom dropdown states
+    const [isOriginOpen, setIsOriginOpen] = useState(false);
+    const [isDestOpen, setIsDestOpen] = useState(false);
+    const originRef = useRef(null);
+    const destRef = useRef(null);
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (originRef.current && !originRef.current.contains(event.target)) {
+                setIsOriginOpen(false);
+            }
+            if (destRef.current && !destRef.current.contains(event.target)) {
+                setIsDestOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Step-by-step navigation state
     const [routeSteps, setRouteSteps] = useState([]);
     const [currentStep, setCurrentStep] = useState(0);
@@ -302,7 +322,7 @@ const MapPage = () => {
             {/* Navigation Controls Overlay */}
             <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0,
-                padding: '1rem', paddingTop: '2.5rem', zIndex: 1000,
+                padding: '1rem', paddingTop: '2.5rem', zIndex: 1005,
                 display: 'flex', flexDirection: 'column', gap: '0.6rem',
                 transform: isNavigating ? 'translateY(-150%)' : 'translateY(0)',
                 transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -312,67 +332,117 @@ const MapPage = () => {
                     backgroundColor: 'rgba(20, 20, 20, 0.85)', backdropFilter: 'blur(20px)',
                     border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px',
                     padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 1002, position: 'relative'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div ref={originRef} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         <User size={18} color="var(--primary)" />
-                        <select
-                            value={selectedOriginId} onChange={(e) => setSelectedOriginId(e.target.value)}
+                        <div 
+                            onClick={() => setIsOriginOpen(!isOriginOpen)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none',
                                 color: selectedOriginId ? 'white' : 'var(--text-muted)',
-                                fontSize: '0.95rem', outline: 'none', appearance: 'none'
+                                fontSize: '0.95rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                             }}
                         >
-                            <option value="" disabled style={{ color: 'black' }}>Locația ta</option>
-                            {MAP_NODES.map(n => (
-                                <option key={`org-${n.id}`} value={n.id} style={{ color: 'black' }}>{n.label}</option>
-                            ))}
-                        </select>
+                            <span style={{ textAlign: 'center', flex: 1 }}>
+                                {selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Locația ta'}
+                            </span>
+                            <span style={{ fontSize: '0.7rem' }}>▼</span>
+                        </div>
+                        
+                        {isOriginOpen && (
+                            <div className="custom-scrollbar" style={{
+                                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.8rem',
+                                backgroundColor: '#1a1a1a', borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 1001,
+                                maxHeight: '220px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                                {MAP_NODES.map(n => (
+                                    <div 
+                                        key={`org-${n.id}`}
+                                        className="dropdown-item"
+                                        onClick={() => { setSelectedOriginId(n.id); setIsOriginOpen(false); }}
+                                    >
+                                        {n.label}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '0 0.5rem' }} />
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div ref={destRef} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         <MapIcon size={18} color={selectedDestId ? 'var(--accent)' : 'var(--text-muted)'} />
-                        <select
-                            value={selectedDestId} onChange={(e) => setSelectedDestId(e.target.value)}
+                        <div 
+                            onClick={() => setIsDestOpen(!isDestOpen)}
                             style={{
                                 flex: 1, background: 'transparent', border: 'none',
                                 color: selectedDestId ? 'white' : 'var(--text-muted)',
-                                fontSize: '0.95rem', outline: 'none', appearance: 'none'
+                                fontSize: '0.95rem', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
                             }}
                         >
-                            <option value="" disabled style={{ color: 'black' }}>Alege Destinația</option>
-                            {MAP_NODES.map(n => (
-                                <option key={`dest-${n.id}`} value={n.id} disabled={n.id === selectedOriginId} style={{ color: 'black' }}>{n.label}</option>
-                            ))}
-                        </select>
+                            <span style={{ textAlign: 'center', flex: 1 }}>
+                                {selectedDestId ? MAP_NODES.find(n => n.id === selectedDestId)?.label : 'Alege Destinația'}
+                            </span>
+                            <span style={{ fontSize: '0.7rem' }}>▼</span>
+                        </div>
+                        
+                        {isDestOpen && (
+                            <div className="custom-scrollbar" style={{
+                                position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '0.8rem',
+                                backgroundColor: '#1a1a1a', borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)', zIndex: 1001,
+                                maxHeight: '220px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)'
+                            }}>
+                                {MAP_NODES.map(n => {
+                                    const isDisabled = n.id === selectedOriginId;
+                                    return (
+                                        <div 
+                                            key={`dest-${n.id}`}
+                                            className={`dropdown-item ${isDisabled ? 'disabled' : ''}`}
+                                            onClick={() => { 
+                                                if (!isDisabled) {
+                                                    setSelectedDestId(n.id); 
+                                                    setIsDestOpen(false); 
+                                                }
+                                            }}
+                                        >
+                                            {n.label}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 1 }}>
                     <button
                         onClick={() => navigate('/scanner')}
                         style={{
                             flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            padding: '0.85rem', backgroundColor: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.1)',
-                            borderRadius: '14px', color: 'white', fontWeight: 600, backdropFilter: 'blur(10px)', fontSize: '0.9rem'
+                            padding: '0.85rem', backgroundColor: '#ffffff', border: 'none',
+                            borderRadius: '14px', color: '#0a0a0c', fontWeight: 800, fontSize: '0.95rem',
+                            boxShadow: '0 8px 24px rgba(255, 255, 255, 0.25)', transition: 'all 0.2s',
                         }}
                     >
-                        <QrCode size={18} /> Scan QR
+                        <QrCode size={19} color="#0a0a0c" /> Scanează Bilet
                     </button>
 
-                    <button
-                        onClick={handleStartNavigation} disabled={!selectedOriginId || !selectedDestId}
-                        style={{
-                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            padding: '0.85rem', backgroundColor: 'var(--primary)', border: 'none', borderRadius: '14px',
-                            color: 'white', fontWeight: 700, opacity: (selectedOriginId && selectedDestId) ? 1 : 0.5, fontSize: '0.9rem'
-                        }}
-                    >
-                        <Navigation size={18} /> Navigare
-                    </button>
+                    {selectedOriginId && selectedDestId && (
+                        <button
+                            onClick={handleStartNavigation}
+                            style={{
+                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                padding: '0.85rem', backgroundColor: 'var(--primary)', border: 'none', borderRadius: '14px',
+                                color: 'white', fontWeight: 700, fontSize: '0.9rem',
+                                animation: 'fadeIn 0.3s ease-out'
+                            }}
+                        >
+                            <Navigation size={18} /> Navigare
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -702,6 +772,37 @@ const MapPage = () => {
                     0% { transform: scale(1); }
                     50% { transform: scale(1.15); }
                     100% { transform: scale(1); }
+                }
+                .dropdown-item {
+                    padding: 10px 15px;
+                    color: white;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                    text-align: center;
+                }
+                .dropdown-item:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+                .dropdown-item.disabled {
+                    color: rgba(255, 255, 255, 0.3);
+                    cursor: not-allowed;
+                }
+                .dropdown-item.disabled:hover {
+                    background-color: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.1);
+                    border-radius: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.2);
+                    border-radius: 8px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.3);
                 }
             `}</style>
         </div>
