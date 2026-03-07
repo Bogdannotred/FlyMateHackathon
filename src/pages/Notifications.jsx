@@ -4,23 +4,30 @@ import { Bell, Info, AlertTriangle, CheckCircle } from 'lucide-react';
 const mockNotifications = [
     {
         id: 1,
-        type: 'info',
-        title: 'Check-in deschis',
-        message: 'Check-in-ul pentru zborul tău spre Londra este acum deschis la ghișeele 12-14.',
-        time: 'Acum 10 minute'
+        type: 'alert',
+        title: '⚠️ Zbor mutat - Terminal nou',
+        message: 'Atenție! Zborul tău Tarom RO381 spre Roma a fost mutat la Gate 3 (în loc de Gate 6). Ruta ta a fost recalculată automat pe hartă.',
+        time: 'Acum 1 minut'
     },
     {
         id: 2,
-        type: 'alert',
-        title: 'Schimbare poartă',
-        message: 'Zborul tău RO381 va îmbarca de la Poarta 6 (anterior Poarta 4).',
-        time: 'Acum 1 oră'
+        type: 'info',
+        title: 'Check-in finalizat',
+        message: 'Procedura de check-in s-a încheiat. Pregătește bagajele pentru security.',
+        time: 'Acum 35 minute'
     },
     {
         id: 3,
         type: 'success',
-        title: 'Reducere în Duty Free',
-        message: 'Ai primit 10% reducere la parfumuri. Scanează codul de reducere în magazin.',
+        title: 'Voucher Lounge Disponibil',
+        message: 'Fiind călător frecvent, ai primit acces gratuit în FlyMate Lounge. Găsești codul QR în profilul tău.',
+        time: 'Acum 1.5 ore'
+    },
+    {
+        id: 4,
+        type: 'info',
+        title: 'Timp estimat Security',
+        message: 'Timpul curent de așteptare la controlul de securitate este de 8 minute.',
         time: 'Acum 2 ore'
     }
 ];

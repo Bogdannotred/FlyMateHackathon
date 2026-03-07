@@ -162,6 +162,33 @@ const MapPage = () => {
         return () => window.removeEventListener('message', handler);
     }, []);
 
+    // Simulate dynamic gate change
+    useEffect(() => {
+        let timer;
+        // If navigating to Gate 6, simulate a gate change after 8 seconds
+        if (isNavigating && selectedDestId === 'gate6') {
+            timer = setTimeout(() => {
+                setShowNotification('⚠️ ATENȚIE: Zborul tău a fost mutat la Gate 3! Ruta a fost recalculată automat.');
+                setSelectedDestId('gate3');
+                setTimeout(() => setShowNotification(''), 7000);
+
+                // Re-trigger navigation to the new gate
+                if (iframeRef.current && selectedOriginId) {
+                    const origin = MAP_NODES.find(n => n.id === selectedOriginId);
+                    const dest = MAP_NODES.find(n => n.id === 'gate3');
+                    if (origin && dest) {
+                        iframeRef.current.contentWindow.postMessage({
+                            type: 'NAVIGATE',
+                            origin: { id: origin.id, label: origin.label },
+                            dest: { id: dest.id, label: dest.label }
+                        }, '*');
+                    }
+                }
+            }, 8000);
+        }
+        return () => clearTimeout(timer);
+    }, [isNavigating, selectedDestId, selectedOriginId]);
+
     const handleStartNavigation = (optOriginId, optDestId) => {
         const oId = optOriginId || selectedOriginId;
         const dId = optDestId || selectedDestId;
