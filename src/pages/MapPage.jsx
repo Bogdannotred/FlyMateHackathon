@@ -212,7 +212,7 @@ const MapPage = () => {
                 setRouteSteps(prev => {
                     const updated = [...prev];
                     if (updated.length > 0) {
-                        const gate6Data = { id: 'gate6', label: 'Gate 6', lat: 47.028445, lng: 21.899117 };
+                        const gate6Data = { id: 'gate6', label: 'Gate 6', lat: 47.028256, lng: 21.899329 };
                         updated[updated.length - 1] = gate6Data;
                     }
                     return updated;
@@ -224,7 +224,7 @@ const MapPage = () => {
                     if (iframeRef.current) {
                         iframeRef.current.contentWindow.postMessage({
                             type: 'SWAP_DEST',
-                            newDest: { id: 'gate6', label: 'Gate 6', lat: 47.028445, lng: 21.899117 }
+                            newDest: { id: 'gate6', label: 'Gate 6', lat: 47.028256, lng: 21.899329 }
                         }, '*');
                     }
                 }, 100);
