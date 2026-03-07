@@ -446,56 +446,31 @@ const MapPage = () => {
                 </button>
             </div>
 
-            {/* Directional Pad UI */}
+            {/* Step Controls UI */}
             {isNavigating && currentStepIndex < pathNodes.length - 1 && (
                 <div style={{
                     position: 'absolute', bottom: '7rem', left: '1.5rem', right: '1.5rem',
                     zIndex: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
                     animation: 'fadeIn 0.5s ease'
                 }}>
-                    {/* Forward Button */}
                     <button
-                        onClick={() => handleArrowClick('forward')}
+                        onClick={() => {
+                            setCurrentStepIndex(prev => prev + 1);
+                            setShowNotification('');
+                        }}
                         style={{
-                            width: '70px', height: '70px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)',
-                            border: '1px solid rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(10px)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)', marginBottom: '-0.5rem'
+                            width: '100%', padding: '1.25rem', backgroundColor: 'var(--primary)',
+                            border: 'none', borderRadius: '16px', color: 'white', fontWeight: 700, fontSize: '1.1rem',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
                         }}
                     >
-                        <ArrowUp size={36} />
+                        Next Step
                     </button>
-
-                    {/* Left / Right Buttons */}
-                    <div style={{ display: 'flex', gap: '4rem' }}>
-                        <button
-                            onClick={() => handleArrowClick('left')}
-                            style={{
-                                width: '70px', height: '70px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(10px)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-                            }}
-                        >
-                            <ArrowLeft size={36} />
-                        </button>
-                        <button
-                            onClick={() => handleArrowClick('right')}
-                            style={{
-                                width: '70px', height: '70px', borderRadius: '50%', backgroundColor: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(10px)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-                            }}
-                        >
-                            <ArrowRight size={36} />
-                        </button>
-                    </div>
 
                     <button
                         onClick={handleCancelNavigation}
                         style={{
-                            marginTop: '1rem', padding: '0.75rem 2rem', backgroundColor: 'transparent',
+                            width: '100%', padding: '1rem', backgroundColor: 'transparent',
                             border: '1px solid var(--error)', borderRadius: '16px', color: 'var(--error)', fontWeight: 600,
                         }}
                     >
