@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Navigation, QrCode, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, User, Minus } from 'lucide-react';
 import { ORADEA_NODES, ORADEA_EDGES, WALL_PATHS, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
-import { XamlPins } from '../data/XamlPins';
 
 const MapPage = () => {
     const navigate = useNavigate();
@@ -657,9 +656,6 @@ const MapPage = () => {
                             </g>
                         )}
                     </svg>
-
-                    {/* User's custom XAML pins / shops overlay */}
-                    <XamlPins />
                 </div>
             </div>
 
