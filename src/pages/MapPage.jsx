@@ -263,9 +263,9 @@ const MapPage = () => {
             {/* Notification */}
             {showNotification && (
                 <div style={{
-                    position: 'absolute', top: '10rem', left: '1.5rem', right: '1.5rem',
+                    position: 'absolute', top: '7rem', left: '1.5rem', right: '1.5rem',
                     backgroundColor: 'var(--success)', color: 'white', padding: '1rem', borderRadius: '16px',
-                    textAlign: 'center', fontWeight: 600, zIndex: 1000,
+                    textAlign: 'center', fontWeight: 600, zIndex: 9999,
                     boxShadow: '0 8px 32px rgba(0,0,0,0.5)', animation: 'fadeIn 0.3s ease-out'
                 }}>
                     {showNotification}

@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Map as MapIcon, QrCode, Ticket } from 'lucide-react';
+import { Home, Map as MapIcon, QrCode, Bell } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 const BottomNav = () => {
@@ -11,7 +11,7 @@ const BottomNav = () => {
         { path: '/', icon: Home, label: 'Home' },
         { path: '/map', icon: MapIcon, label: 'Map' },
         { path: '/scanner', icon: QrCode, label: 'Scan' },
-        { path: '/gamificare', icon: Ticket, label: 'Rewards' }
+        { path: '/notifications', icon: Bell, label: 'Notificări' }
     ];
 
     // Calculate active tab for the sliding indicator
