@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Navigation, QrCode, User, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, Minus, Coffee, Monitor, Shield, ShoppingBag, Droplets, Utensils } from 'lucide-react';
-import { ORADEA_NODES, ORADEA_EDGES, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
+import { Navigation, QrCode, Map as MapIcon, ArrowUp, ArrowLeft, ArrowRight, Plus, User, Minus } from 'lucide-react';
+import { ORADEA_NODES, ORADEA_EDGES, WALL_PATHS, findShortestPath, getNodesAsArray } from '../data/OradeaMapGraph';
+import { XamlPins } from '../data/XamlPins';
 
 const MapPage = () => {
     const navigate = useNavigate();
@@ -35,9 +36,11 @@ const MapPage = () => {
 
     useEffect(() => {
         if (scanned === 'true' && originParam && ORADEA_NODES[originParam]) {
-            setSelectedOriginId(originParam);
-            setShowNotification(`📍 Pinned at: ${ORADEA_NODES[originParam].label}`);
-            setTimeout(() => setShowNotification(''), 4000);
+            setTimeout(() => {
+                setSelectedOriginId(originParam);
+                setShowNotification(`📍 Pinned at: ${ORADEA_NODES[originParam].label}`);
+                setTimeout(() => setShowNotification(''), 4000);
+            }, 0);
         }
     }, [scanned, originParam]);
 
@@ -56,8 +59,8 @@ const MapPage = () => {
         setIsNavigating(false);
         setPathNodes([]);
         setCurrentStepIndex(0);
-        // Reset camera to an overview of the right-side building (roughly x=850)
-        setCameraTransform({ x: 850, y: 140, rotate: 0, scale: 2 });
+        // Reset camera to overview
+        setCameraTransform({ x: 50, y: 50, rotate: 0, scale: 1 });
         setUserZoomOffset(0);
         setPanOffset({ x: 0, y: 0 });
     };
@@ -72,7 +75,9 @@ const MapPage = () => {
 
     useEffect(() => {
         if (!isNavigating || pathNodes.length === 0) {
-            setCameraTransform({ x: 850, y: 100, rotate: 0, scale: 3 + userZoomOffset });
+            setTimeout(() => {
+                setCameraTransform(prev => ({ ...prev, x: 50, y: 40, rotate: 0, scale: 1 + userZoomOffset }));
+            }, 0);
             return;
         }
 
@@ -85,7 +90,7 @@ const MapPage = () => {
                 x: currentNode.x,
                 y: currentNode.y,
                 rotate: targetRotation,
-                scale: 6.5 // Base zoom for large map
+                scale: 3.5 // Base zoom
             });
         } else {
             setCameraTransform(prev => ({ ...prev, x: currentNode.x, y: currentNode.y }));
@@ -164,66 +169,17 @@ const MapPage = () => {
         const localDy = -dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
 
         setPanOffset(prev => ({
-            x: prev.x - localDx * sensitivity * 10,  // Scale up for 1000px wide map
-            y: prev.y - localDy * sensitivity * 2.8   // Scale up for 280px tall map
+            x: prev.x - localDx * sensitivity,
+            y: prev.y - localDy * sensitivity
         }));
     };
 
     const handleWheel = (e) => {
         const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
-        setUserZoomOffset(prev => Math.max(-2, Math.min(prev + zoomDelta, 6)));
+        setUserZoomOffset(prev => Math.max(-2, Math.min(prev + zoomDelta, 4)));
     };
 
-    // Node Dragging Logic for Setup (Dev Mode)
-    const [draggingNodeId, setDraggingNodeId] = useState(null);
-    const [nodePositions, setNodePositions] = useState({});
-
-    // Initialize node positions from graph if empty
-    useEffect(() => {
-        const initialPositions = {};
-        getNodesAsArray().forEach(n => {
-            initialPositions[n.id] = { x: n.x, y: n.y };
-        });
-        setNodePositions(initialPositions);
-    }, []);
-
-    const handleNodePointerDown = (e, id) => {
-        e.stopPropagation(); // prevent map pan
-        setDraggingNodeId(id);
-        setIsDragging(true);
-    };
-
-    const handleScreenPointerMove = (e) => {
-        if (draggingNodeId) {
-            // Very rough screen-to-svg mapping for dragging
-            const svgRect = document.getElementById('airport-svg').getBoundingClientRect();
-
-            // This is complex due to scale and translations, but a rough approximation:
-            const svgX = ((e.clientX - svgRect.left) / svgRect.width) * 1000;
-            const svgY = ((e.clientY - svgRect.top) / svgRect.height) * 280;
-
-            // Realistically we shouldn't map perfectly while zoomed, user should zoom out to 1 to drag safely, or we use a dedicated admin layout
-        }
-    };
-
-    const handleScreenPointerUp = () => {
-        if (draggingNodeId) {
-            const newPos = JSON.stringify(nodePositions, null, 2);
-            console.log("Updated node positions:\n", newPos);
-            setShowNotification("Coordinates printed to console!");
-            setTimeout(() => setShowNotification(false), 3000);
-            setDraggingNodeId(null);
-            setIsDragging(false);
-        }
-    };
-
-    // Add global listener for dropping nodes
-    useEffect(() => {
-        window.addEventListener('pointerup', handleScreenPointerUp);
-        return () => window.removeEventListener('pointerup', handleScreenPointerUp);
-    });
-
-    const nodes = getNodesAsArray().map(n => ({ ...n, ...nodePositions[n.id] }));
+    const nodes = getNodesAsArray();
 
     // Mock Flight Notifications Pool (30 items)
     const MOCK_NOTIFICATIONS = [
@@ -567,26 +523,15 @@ const MapPage = () => {
             )}
 
 
-            {/* Custom SVG Map Container */}
+            {/* SVG MAP ENGINE */}
             <div style={{
-                flex: 1,
-                width: '100%',
-                height: '100%',
-                position: 'relative',
-                backgroundColor: '#9ca3af', // Gray background typical for blueprints
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingTop: '8rem', // push map down slightly away from UI
+                position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '1000px',
                 cursor: isDragging ? 'grabbing' : 'grab',
-                touchAction: 'none'
+                touchAction: 'none' // Crucial for mobile dragging
             }}
                 onPointerDown={handlePointerDown}
-                onPointerMove={(e) => {
-                    handlePointerMove(e);
-                    handleScreenPointerMove(e);
-                }}
+                onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
                 onWheel={handleWheel}
@@ -594,67 +539,72 @@ const MapPage = () => {
                 <div style={{
                     width: '100%', height: '100%', transformOrigin: 'center center',
                     transform: `
-                        scale(${Math.max(0.2, finalScale)}) 
+                        scale(${Math.max(0.5, finalScale)}) 
                         rotate(${isNavigating ? cameraTransform.rotate : 0}deg)
-                        translate(calc(50% - ${(cameraTransform.x + panOffset.x) / 10}%), calc(50% - ${(cameraTransform.y + panOffset.y) / 2.8}%))
+                        translate(calc(50% - ${cameraTransform.x + panOffset.x}%), calc(50% - ${cameraTransform.y + panOffset.y}%))
                     `,
                     transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     willChange: 'transform'
                 }}>
-                    <svg
-                        id="airport-svg"
-                        width="100%"
-                        height="100%"
-                        viewBox="0 0 1000 280"
-                        preserveAspectRatio="xMidYMid meet"
-                        style={{ overflow: 'visible' }}
-                    >
+                    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" style={{ overflow: 'visible' }} onClick={(e) => {
+                        const pt = e.currentTarget.createSVGPoint();
+                        pt.x = e.clientX;
+                        pt.y = e.clientY;
+                        const svgP = pt.matrixTransform(e.currentTarget.getScreenCTM().inverse());
+                        console.log(`Waypoint: x=${svgP.x.toFixed(2)}, y=${svgP.y.toFixed(2)}`);
+                    }}>
                         <defs>
-                            <marker id="arrowhead" markerWidth="4" markerHeight="4"
-                                refX="2" refY="2" orient="auto">
-                                <polygon points="0 0, 4 2, 0 4" fill="var(--accent)" />
+                            {/* Animated Arrowhead for Path */}
+                            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+                                markerWidth="3" markerHeight="3" orient="auto-start-reverse">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)" />
                             </marker>
-                            <filter id="glow">
-                                <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
-                                <feMerge>
-                                    <feMergeNode in="coloredBlur" />
-                                    <feMergeNode in="SourceGraphic" />
-                                </feMerge>
+
+                            {/* Floor texture / glow */}
+                            <filter id="zoneGlow">
+                                <feGaussianBlur stdDeviation="0.8" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
                             </filter>
+
+                            {/* 3D Drop Shadow for Objects (Desks, Vending Machines) */}
+                            <filter id="shadow3d" x="-50%" y="-50%" width="200%" height="200%">
+                                <feDropShadow dx="0" dy="0.8" stdDeviation="0.5" floodColor="#000" floodOpacity="0.8" />
+                                <feDropShadow dx="0" dy="1.5" stdDeviation="1" floodColor="#000" floodOpacity="0.4" />
+                            </filter>
+
+                            {/* Blueprint/Tile Grid Pattern for floor realism */}
+                            <pattern id="gridPattern" width="2" height="2" patternUnits="userSpaceOnUse">
+                                <path d="M 2 0 L 0 0 0 2" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="0.1" />
+                            </pattern>
                         </defs>
 
-                        {/* 1. Actual PDF Floor Plan Background */}
-                        <image href="/map_background.png" x="0" y="0" width="1000" height="280" preserveAspectRatio="none" />
+                        {/* Base grid floor across the whole view */}
+                        <rect x="0" y="0" width="100" height="100" fill="url(#gridPattern)" />
 
-                        {/* 2. Draw all connection edges statically (faint) */}
+                        {/* Main Building Outline - Real Releveu Paths */}
+                        <path
+                            d={WALL_PATHS}
+                            fill="rgba(20, 22, 28, 0.4)"
+                            stroke="rgba(255,255,255,0.4)"
+                            strokeWidth="0.5"
+                            strokeLinejoin="round"
+                        />
+
+                        {/* Static Path Walkways (Subtle connections) */}
                         {ORADEA_EDGES.map((edge, idx) => {
-                            const source = nodePositions[edge.source] || ORADEA_NODES[edge.source];
-                            const target = nodePositions[edge.target] || ORADEA_NODES[edge.target];
+                            const source = ORADEA_NODES[edge.source];
+                            const target = ORADEA_NODES[edge.target];
                             return (
                                 <line
                                     key={`edge-${idx}`}
                                     x1={source.x} y1={source.y}
                                     x2={target.x} y2={target.y}
-                                    stroke="rgba(0,0,0,0.5)"
-                                    strokeWidth="1.5"
+                                    stroke="rgba(255,255,255,0.06)"
+                                    strokeWidth="2"
                                     strokeLinecap="round"
                                 />
                             );
                         })}
-
-                        {/* Path Lines */}
-                        {isNavigating && pathNodes.length > 1 && (
-                            <g>
-                                <polyline points={pathNodes.map(n => {
-                                    const pos = nodePositions[n.id] || n;
-                                    return `${pos.x},${pos.y}`;
-                                }).join(' ')} fill="none" stroke="rgba(15, 98, 254, 0.4)" strokeWidth="4" strokeLinejoin="round" strokeLinecap="round" />
-                                <polyline points={pathNodes.map(n => {
-                                    const pos = nodePositions[n.id] || n;
-                                    return `${pos.x},${pos.y}`;
-                                }).join(' ')} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="6 6" style={{ animation: 'dash 15s linear infinite' }} />
-                            </g>
-                        )}
 
                         {/* Path Lines */}
                         {isNavigating && pathNodes.length > 1 && (
@@ -671,27 +621,27 @@ const MapPage = () => {
                             const isDest = node.id === selectedDestId;
                             const isCurrentStep = isNavigating && pathNodes[currentStepIndex]?.id === node.id;
 
-                            const pos = nodePositions[node.id] || node;
-
                             // Adjust size inversely to scale so dots don't get massive when zoomed in
-                            const dotRadius = 4 / Math.max(0.5, finalScale * 0.5);
+                            const dotRadius = 1.5 / Math.max(1, finalScale * 0.5);
 
-                            let fillColor = 'rgba(255,255,255,0.8)';
-                            let textColor = 'rgba(0,0,0,0.8)';
+                            let fillColor = 'rgba(255,255,255,0.3)';
                             if (isCurrentStep) fillColor = 'var(--primary)';
                             if (isDest) fillColor = 'var(--error)';
 
                             return (
-                                <g
-                                    key={node.id}
-                                    transform={`translate(${pos.x}, ${pos.y})`}
-                                    onPointerDown={(e) => handleNodePointerDown(e, node.id)}
-                                    style={{ cursor: 'move' }}
-                                >
+                                <g key={node.id} transform={`translate(${node.x}, ${node.y})`}>
                                     {(isCurrentStep || isDest || isOrigin) && <circle r={dotRadius * 3} fill={fillColor} opacity="0.3" style={{ animation: 'pulse 2s infinite' }} />}
-                                    <circle r={dotRadius} fill={fillColor} stroke="rgba(0,0,0,0.8)" strokeWidth="1" />
+
+                                    {/* Actual Map Pin instead of simple circle */}
+                                    <g transform={`translate(${-dotRadius * 1.5}, ${-dotRadius * 3}) scale(${dotRadius * 0.15})`}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={fillColor} stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0px 10px 5px rgba(0,0,0,0.5))' }}>
+                                            <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                                            <circle cx="12" cy="10" r="3" fill="white" />
+                                        </svg>
+                                    </g>
+
                                     <g transform={`rotate(${inverseRotate})`}>
-                                        <text x="0" y={-(dotRadius * 2)} fontSize={dotRadius * 2} fill={textColor} textAnchor="middle" fontWeight='800' style={{ userSelect: 'none', textShadow: '0px 0px 4px rgba(255,255,255,1)' }}>
+                                        <text x="0" y={-(dotRadius * 4)} fontSize={dotRadius * 1.5} fill={(isCurrentStep || isDest) ? 'white' : 'rgba(255,255,255,0.7)'} textAnchor="middle" fontWeight={(isCurrentStep || isDest) ? '700' : '500'} style={{ userSelect: 'none', textShadow: '0px 1px 2px rgba(0,0,0,0.8)' }}>
                                             {node.label}
                                         </text>
                                     </g>
@@ -701,12 +651,15 @@ const MapPage = () => {
 
                         {/* Current User Marker */}
                         {isNavigating && pathNodes[currentStepIndex] && (
-                            <g transform={`translate(${nodePositions[pathNodes[currentStepIndex].id]?.x || pathNodes[currentStepIndex].x}, ${nodePositions[pathNodes[currentStepIndex].id]?.y || pathNodes[currentStepIndex].y})`}>
-                                <circle r={4 / Math.max(0.5, finalScale * 0.5)} fill="white" stroke="var(--primary)" strokeWidth="1.5" />
-                                <polygon points="-2,0 2,0 0,-8" fill="var(--primary)" opacity="0.8" transform={`scale(${1 / Math.max(0.5, finalScale * 0.5)})`} />
+                            <g transform={`translate(${pathNodes[currentStepIndex].x}, ${pathNodes[currentStepIndex].y})`}>
+                                <circle r={1.5 / Math.max(1, finalScale * 0.5)} fill="white" stroke="var(--primary)" strokeWidth="0.5" />
+                                <polygon points="-1,0 1,0 0,-4" fill="var(--primary)" opacity="0.4" transform={`scale(${1 / Math.max(1, finalScale * 0.5)})`} />
                             </g>
                         )}
                     </svg>
+
+                    {/* User's custom XAML pins / shops overlay */}
+                    <XamlPins />
                 </div>
             </div>
 

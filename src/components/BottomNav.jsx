@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Map as MapIcon, QrCode, Ticket, Radio } from 'lucide-react';
+import { Home, Map as MapIcon, QrCode, Ticket } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 
 const BottomNav = () => {
@@ -10,7 +10,6 @@ const BottomNav = () => {
     const navItems = [
         { path: '/', icon: Home, label: 'Home' },
         { path: '/map', icon: MapIcon, label: 'Map' },
-        { path: '/aero', icon: Radio, label: 'Beacons' },
         { path: '/scanner', icon: QrCode, label: 'Scan' },
         { path: '/gamificare', icon: Ticket, label: 'Rewards' }
     ];
