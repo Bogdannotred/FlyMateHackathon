@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <style>
+        body { padding: 0; margin: 0; font-family: 'Inter', sans-serif; }
+        html, body, #map { height: 100vh; width: 100vw; }
+        
+        .custom-poi-icon {
+            background: white;
+            border-radius: 50%;
+            border: 2px solid #333;
+            width: 30px !important;
+            height: 30px !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            font-size: 14px;
+            color: #333;
+        }
+        .custom-poi-icon.restroom { color: #0288d1; border-color: #0288d1; }
+        .custom-poi-icon.food { color: #e64a19; border-color: #e64a19; }
+        .custom-poi-icon.medical { color: #d32f2f; border-color: #d32f2f; }
+        .custom-poi-icon.waiting { color: #388e3c; border-color: #388e3c; }
+        .custom-poi-icon.security { color: #fbc02d; border-color: #fbc02d; }
+        .custom-poi-icon.checkin { color: #512da8; border-color: #512da8; }
+        .custom-poi-icon.kids { color: #e91e63; border-color: #e91e63; }
+        .custom-poi-icon.entrance { color: #4CAF50; border-color: #4CAF50; }
+        .custom-poi-icon.gate { color: #1976D2; border-color: #1976D2; }
+        .custom-poi-icon.shop { color: #9C27B0; border-color: #9C27B0; }
+        .custom-poi-icon.elevator { color: #546E7A; border-color: #546E7A; }
+        .custom-poi-icon.parking { color: #1565C0; border-color: #1565C0; }
+        .custom-poi-icon.exit { color: #D32F2F; border-color: #D32F2F; }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/multi-style-layer.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="data/beacons_1.js"></script>
+        <script src="data/releveu_2.js"></script>
+        <script src="data/zonebeacons_3.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[47.026219517431954,21.89437910068521],[47.03068316676018,21.905130503808042]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_Positron_0');
+        map.getPane('pane_Positron_0').style.zIndex = 400;
+        var layer_Positron_0 = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            pane: 'pane_Positron_0',
+            opacity: 1.0,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            subdomains: 'abcd',
+        });
+        layer_Positron_0;
+        map.addLayer(layer_Positron_0);
+        function pop_beacons_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(feature.properties['ID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Denumire'] !== null ? autolinker.link(feature.properties['Denumire'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SN'] !== null ? autolinker.link(feature.properties['SN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Marca'] !== null ? autolinker.link(feature.properties['Marca'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Model'] !== null ? autolinker.link(feature.properties['Model'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Frecventa'] !== null ? autolinker.link(feature.properties['Frecventa'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Razatransmitere'] !== null ? autolinker.link(feature.properties['Razatransmitere'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_beacons_1_0() {
+            return {
+                pane: 'pane_beacons_1',
+                radius: 4.0,
+                opacity: 1,
+                color: 'rgba(50,87,128,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 2.0,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(72,123,182,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_beacons_1');
+        map.getPane('pane_beacons_1').style.zIndex = 401;
+        map.getPane('pane_beacons_1').style['mix-blend-mode'] = 'normal';
+        var layer_beacons_1 = new L.geoJson(json_beacons_1, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_beacons_1',
+            layerName: 'layer_beacons_1',
+            pane: 'pane_beacons_1',
+            onEachFeature: pop_beacons_1,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_beacons_1_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_beacons_1);
+        map.addLayer(layer_beacons_1);
+        function pop_releveu_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_releveu_2_0() {
+            return {
+                pane: 'pane_releveu_2',
+                opacity: 1,
+                color: 'rgba(245,154,7,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 3.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_releveu_2');
+        map.getPane('pane_releveu_2').style.zIndex = 402;
+        map.getPane('pane_releveu_2').style['mix-blend-mode'] = 'normal';
+        var layer_releveu_2 = new L.geoJson(json_releveu_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_releveu_2',
+            layerName: 'layer_releveu_2',
+            pane: 'pane_releveu_2',
+            onEachFeature: pop_releveu_2,
+            style: style_releveu_2_0,
+        });
+        bounds_group.addLayer(layer_releveu_2);
+        map.addLayer(layer_releveu_2);
+        function pop_zonebeacons_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['ID'] !== null ? autolinker.link(feature.properties['ID'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Denumire'] !== null ? autolinker.link(feature.properties['Denumire'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['SN'] !== null ? autolinker.link(feature.properties['SN'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Marca'] !== null ? autolinker.link(feature.properties['Marca'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Model'] !== null ? autolinker.link(feature.properties['Model'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Frecventa'] !== null ? autolinker.link(feature.properties['Frecventa'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Razatransmitere'] !== null ? autolinker.link(feature.properties['Razatransmitere'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        var pattern_zonebeacons_3_0 = new L.StripePattern({
+            weight: 0.3,
+            spaceWeight: 2.0,
+            color: '#1f78b4',
+            opacity: 1.0,
+            spaceOpacity: 0,
+            angle: 315
+        });
+        pattern_zonebeacons_3_0.addTo(map);
+        function style_zonebeacons_3_0() {
+            return {
+                pane: 'pane_zonebeacons_3',
+                stroke: false,
+                fillOpacity: 1,
+                fillPattern: pattern_zonebeacons_3_0,
+                interactive: true,
+            }
+        }
+        var pattern_zonebeacons_3_1 = new L.StripePattern({
+            weight: 0.3,
+            spaceWeight: 2.0,
+            color: '#1f78b4',
+            opacity: 1.0,
+            spaceOpacity: 0,
+            angle: 225
+        });
+        pattern_zonebeacons_3_1.addTo(map);
+        function style_zonebeacons_3_1() {
+            return {
+                pane: 'pane_zonebeacons_3',
+                stroke: false,
+                fillOpacity: 1,
+                fillPattern: pattern_zonebeacons_3_1,
+                interactive: true,
+            }
+        }
+        function style_zonebeacons_3_2() {
+            return {
+                pane: 'pane_zonebeacons_3',
+                opacity: 1,
+                color: 'rgba(31,120,180,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_zonebeacons_3');
+        map.getPane('pane_zonebeacons_3').style.zIndex = 403;
+        map.getPane('pane_zonebeacons_3').style['mix-blend-mode'] = 'normal';
+        var layer_zonebeacons_3 = new L.geoJson.multiStyle(json_zonebeacons_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_zonebeacons_3',
+            layerName: 'layer_zonebeacons_3',
+            pane: 'pane_zonebeacons_3',
+            onEachFeature: pop_zonebeacons_3,
+            styles: [style_zonebeacons_3_0,style_zonebeacons_3_1,style_zonebeacons_3_2,]
+        });
+        bounds_group.addLayer(layer_zonebeacons_3);
+        map.addLayer(layer_zonebeacons_3);
+        
+        // --- CUSTOM POI MARKERS ---
+        var pois = [
+            { lat: 47.028181, lng: 21.898466, type: 'entrance', icon: 'fa-sign-in-alt', label: 'Intrare' },
+            { lat: 47.028857, lng: 21.898815, type: 'exit', icon: 'fa-door-closed', label: 'Iesire' },
+            { lat: 47.028098, lng: 21.898633, type: 'checkin', icon: 'fa-clipboard-check', label: 'Check-in' },
+            { lat: 47.028029, lng: 21.898815, type: 'security', icon: 'fa-shield-alt', label: 'Security' },
+            { lat: 47.028161, lng: 21.899083, type: 'waiting', icon: 'fa-couch', label: 'Camera asteptare 1' },
+            { lat: 47.027832, lng: 21.898952, type: 'waiting', icon: 'fa-couch', label: 'Camera asteptare 2' },
+            { lat: 47.027680, lng: 21.899201, type: 'gate', icon: 'fa-door-open', label: 'Gate 1' },
+            { lat: 47.027778, lng: 21.899220, type: 'gate', icon: 'fa-door-open', label: 'Gate 2' },
+            { lat: 47.027882, lng: 21.899247, type: 'gate', icon: 'fa-door-open', label: 'Gate 3' },
+            { lat: 47.028064, lng: 21.899298, type: 'gate', icon: 'fa-door-open', label: 'Gate 4' },
+            { lat: 47.028156, lng: 21.899323, type: 'gate', icon: 'fa-door-open', label: 'Gate 5' },
+            { lat: 47.028257, lng: 21.899350, type: 'gate', icon: 'fa-door-open', label: 'Gate 6' },
+            { lat: 47.027597, lng: 21.898745, type: 'restroom', icon: 'fa-wheelchair', label: 'Disabled restroom' },
+            { lat: 47.027584, lng: 21.898894, type: 'restroom', icon: 'fa-male', label: 'Men restroom' },
+            { lat: 47.027570, lng: 21.899052, type: 'restroom', icon: 'fa-female', label: 'Women restroom' },
+            { lat: 47.027729, lng: 21.898693, type: 'food', icon: 'fa-coffee', label: 'Cafenea' },
+            { lat: 47.027824, lng: 21.898732, type: 'food', icon: 'fa-utensils', label: 'Restaurant' },
+            { lat: 47.028424, lng: 21.899146, type: 'kids', icon: 'fa-child', label: "Kids' area" },
+            { lat: 47.028907, lng: 21.899452, type: 'shop', icon: 'fa-shopping-bag', label: 'Magazin haine' },
+            { lat: 47.028945, lng: 21.899107, type: 'medical', icon: 'fa-briefcase-medical', label: 'Farmacie' },
+            { lat: 47.028381, lng: 21.898922, type: 'elevator', icon: 'fa-layer-group', label: 'Lift' },
+            { lat: 47.028503, lng: 21.899389, type: 'restroom', icon: 'fa-wheelchair', label: 'Disabled restroom' },
+            { lat: 47.028578, lng: 21.899408, type: 'restroom', icon: 'fa-male', label: 'Men restroom' },
+            { lat: 47.028615, lng: 21.899421, type: 'restroom', icon: 'fa-female', label: 'Women restroom' },
+            { lat: 47.029046, lng: 21.898225, type: 'parking', icon: 'fa-parking', label: 'Parcare 1' },
+            { lat: 47.028237, lng: 21.897828, type: 'parking', icon: 'fa-parking', label: 'Parcare 2' }
+        ];
+
+        var poiLayerGroup = L.featureGroup();
+        pois.forEach(function(poi) {
+            var iconHtml = '<i class="fas ' + poi.icon + '"></i>';
+            var customIcon = L.divIcon({
+                className: 'custom-poi-icon ' + poi.type,
+                html: iconHtml,
+                iconSize: [30, 30],
+                iconAnchor: [15, 15],
+                popupAnchor: [0, -15]
+            });
+            var marker = L.marker([poi.lat, poi.lng], { icon: customIcon });
+            marker.bindPopup('<b style="font-family: \'Inter\', sans-serif;">' + poi.label + '</b>');
+            poiLayerGroup.addLayer(marker);
+        });
+        map.addLayer(poiLayerGroup);
+        bounds_group.addLayer(poiLayerGroup);
+        
+        var baseMaps = {};
+        var overlaysTree = [
+        {label: '<b>Proiect_Aero</b>', selectAllCheckbox: true, children: [
+            {label: '<b><i class="fas fa-map-marker-alt" style="color:#e64a19"></i> POIs</b>', layer: poiLayerGroup},
+            {label: '<img src="legend/zonebeacons_3.png" /> zone beacons', layer: layer_zonebeacons_3},
+            {label: '<img src="legend/releveu_2.png" /> releveu', layer: layer_releveu_2},
+            {label: '<img src="legend/beacons_1.png" /> beacons', layer: layer_beacons_1},]},
+            {label: "CartoDB Positron", layer: layer_Positron_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: false, 
+        });
+        lay.addTo(map);
+        setBounds();
+        
+        // --- CLICK TO GET COORDINATES ---
+        var coordsPopup = L.popup();
+        function onMapClick(e) {
+            coordsPopup
+                .setLatLng(e.latlng)
+                .setContent('<b>Latitudine:</b> ' + e.latlng.lat.toFixed(6) + '<br><b>Longitudine:</b> ' + e.latlng.lng.toFixed(6))
+                .openOn(map);
+        }
+        map.on('click', onMapClick);
+        </script>
+    </body>
+</html>
