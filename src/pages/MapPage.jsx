@@ -4,12 +4,12 @@ import { Navigation, QrCode, Map as MapIcon, User, ChevronLeft, ChevronRight, Ac
 
 // ─── POI data matching the map/index.html POIs ───
 const MAP_NODES = [
-    { id: 'entrance', label: 'Intrare' },
-    { id: 'exit', label: 'Iesire' },
+    { id: 'entrance', label: 'Entrance' },
+    { id: 'exit', label: 'Exit' },
     { id: 'checkin', label: 'Check-in' },
     { id: 'security', label: 'Security' },
-    { id: 'waiting1', label: 'Camera asteptare 1' },
-    { id: 'waiting2', label: 'Camera asteptare 2' },
+    { id: 'waiting1', label: 'Waiting Room 1' },
+    { id: 'waiting2', label: 'Waiting Room 2' },
     { id: 'gate1', label: 'Gate 1' },
     { id: 'gate2', label: 'Gate 2' },
     { id: 'gate3', label: 'Gate 3' },
@@ -19,17 +19,17 @@ const MAP_NODES = [
     { id: 'wc_disabled', label: 'Disabled restroom' },
     { id: 'wc_men', label: 'Men restroom' },
     { id: 'wc_women', label: 'Women restroom' },
-    { id: 'cafe', label: 'Cafenea' },
+    { id: 'cafe', label: 'Cafe' },
     { id: 'restaurant', label: 'Restaurant' },
     { id: 'kids', label: "Kids' area" },
-    { id: 'shop', label: 'Magazin haine' },
-    { id: 'medical', label: 'Farmacie' },
-    { id: 'elevator', label: 'Lift' },
+    { id: 'shop', label: 'Clothes Shop' },
+    { id: 'medical', label: 'Pharmacy' },
+    { id: 'elevator', label: 'Elevator' },
     { id: 'wc_disabled2', label: 'Disabled restroom 2' },
     { id: 'wc_men2', label: 'Men restroom 2' },
     { id: 'wc_women2', label: 'Women restroom 2' },
-    { id: 'parking1', label: 'Parcare 1' },
-    { id: 'parking2', label: 'Parcare 2' },
+    { id: 'parking1', label: 'Parking 1' },
+    { id: 'parking2', label: 'Parking 2' },
 ];
 
 const MapPage = () => {
@@ -146,12 +146,31 @@ const MapPage = () => {
         return `${m}:${sec.toString().padStart(2, '0')}`;
     };
 
+    const handleStartNavigation = (optOriginId, optDestId) => {
+        // Prevent assigning the React SyntheticEvent to oId if called from onClick
+        const oId = typeof optOriginId === 'string' ? optOriginId : selectedOriginId;
+        const dId = typeof optDestId === 'string' ? optDestId : selectedDestId;
+
+        if (oId && dId) {
+            const origin = MAP_NODES.find(n => n.id === oId);
+            const dest = MAP_NODES.find(n => n.id === dId);
+            if (iframeRef.current && origin && dest) {
+                setIsNavigating(true);
+                iframeRef.current.contentWindow.postMessage({
+                    type: 'NAVIGATE',
+                    origin: { id: origin.id, label: origin.label },
+                    dest: { id: dest.id, label: dest.label }
+                }, '*');
+            }
+        }
+    };
+
     useEffect(() => {
         if (scanned === 'true' && originParam) {
             const node = MAP_NODES.find(n => n.id === originParam);
             if (node) {
                 setSelectedOriginId(originParam);
-                setShowNotification(`📍 Localizat: ${node.label}`);
+                setShowNotification(`📍 Located: ${node.label}`);
                 setTimeout(() => setShowNotification(''), 4000);
             }
             if (destParam) {
@@ -202,7 +221,7 @@ const MapPage = () => {
                 gateChangeTriggered.current = true;
 
                 // Show notification
-                setShowNotification('⚠️ ATENȚIE: Zborul tău a fost mutat la Gate 6! Ruta a fost recalculată automat.');
+                setShowNotification('⚠️ ATTENTION: Your flight has been moved to Gate 6! The route was automatically recalculated.');
                 setTimeout(() => setShowNotification(''), 7000);
 
                 // Update destination in React state
@@ -233,24 +252,6 @@ const MapPage = () => {
         return () => clearTimeout(timer);
     }, [isNavigating, selectedDestId]);
 
-    const handleStartNavigation = (optOriginId, optDestId) => {
-        // Prevent assigning the React SyntheticEvent to oId if called from onClick
-        const oId = typeof optOriginId === 'string' ? optOriginId : selectedOriginId;
-        const dId = typeof optDestId === 'string' ? optDestId : selectedDestId;
-
-        if (oId && dId) {
-            const origin = MAP_NODES.find(n => n.id === oId);
-            const dest = MAP_NODES.find(n => n.id === dId);
-            if (iframeRef.current && origin && dest) {
-                setIsNavigating(true);
-                iframeRef.current.contentWindow.postMessage({
-                    type: 'NAVIGATE',
-                    origin: { id: origin.id, label: origin.label },
-                    dest: { id: dest.id, label: dest.label }
-                }, '*');
-            }
-        }
-    };
 
     const handleCancelNavigation = () => {
         setIsNavigating(false);
@@ -347,7 +348,7 @@ const MapPage = () => {
             {/* Navigation Controls Overlay */}
             <div style={{
                 position: 'absolute', top: 0, left: 0, right: 0,
-                padding: '1rem', paddingTop: '2.5rem', zIndex: 1005,
+                padding: '1rem', paddingTop: '1rem', zIndex: 1005,
                 display: 'flex', flexDirection: 'column', gap: '0.6rem',
                 transform: isNavigating ? 'translateY(-150%)' : 'translateY(0)',
                 transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -359,6 +360,8 @@ const MapPage = () => {
                     padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem',
                     boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 1002, position: 'relative'
                 }}>
+                    {/* Top Row: Navigation Button (if both selected)  - MOVED */}
+
                     <div ref={originRef} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', position: 'relative' }}>
                         <User size={18} color="var(--primary)" />
                         <div
@@ -370,7 +373,7 @@ const MapPage = () => {
                             }}
                         >
                             <span style={{ textAlign: 'center', flex: 1 }}>
-                                {selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Locația ta'}
+                                {selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Your location'}
                             </span>
                             <span style={{ fontSize: '0.7rem' }}>▼</span>
                         </div>
@@ -408,7 +411,7 @@ const MapPage = () => {
                             }}
                         >
                             <span style={{ textAlign: 'center', flex: 1 }}>
-                                {selectedDestId ? MAP_NODES.find(n => n.id === selectedDestId)?.label : 'Alege Destinația'}
+                                {selectedDestId ? MAP_NODES.find(n => n.id === selectedDestId)?.label : 'Choose Destination'}
                             </span>
                             <span style={{ fontSize: '0.7rem' }}>▼</span>
                         </div>
@@ -442,6 +445,7 @@ const MapPage = () => {
                     </div>
                 </div>
 
+                {/* Bottom Row: Actions */}
                 <div style={{ display: 'flex', gap: '0.5rem', position: 'relative', zIndex: 1 }}>
                     <button
                         onClick={() => navigate('/scanner')}
@@ -452,7 +456,7 @@ const MapPage = () => {
                             boxShadow: '0 8px 24px rgba(255, 255, 255, 0.25)', transition: 'all 0.2s',
                         }}
                     >
-                        <QrCode size={19} color="#0a0a0c" /> Scanează Bilet
+                        <QrCode size={19} color="#0a0a0c" /> Scan Ticket
                     </button>
 
                     {selectedOriginId && selectedDestId && (
@@ -465,7 +469,7 @@ const MapPage = () => {
                                 animation: 'fadeIn 0.3s ease-out'
                             }}
                         >
-                            <Navigation size={18} /> Navigare
+                            <Navigation size={18} /> Navigate
                         </button>
                     )}
                 </div>
@@ -500,7 +504,7 @@ const MapPage = () => {
                                 </h3>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
                                     <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0 }}>
-                                        Pas {currentStep + 1} / {routeSteps.length}
+                                        Step {currentStep + 1} / {routeSteps.length}
                                         {routeSteps[currentStep] && ` — ${routeSteps[currentStep].label}`}
                                     </p>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -547,239 +551,249 @@ const MapPage = () => {
                     </div>
 
                     {/* Bottom step controls */}
-                    {routeSteps.length > 0 && (
-                        <div style={{
-                            position: 'absolute', bottom: '7.5rem', left: '1rem', right: '1rem', zIndex: 1000,
-                            animation: 'fadeIn 0.5s ease 0.2s both'
-                        }}>
+                    {
+                        routeSteps.length > 0 && (
                             <div style={{
-                                backgroundColor: 'rgba(20, 20, 20, 0.92)', backdropFilter: 'blur(20px)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '0.75rem',
-                                boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                                position: 'absolute', bottom: '7.5rem', left: '1rem', right: '1rem', zIndex: 1000,
+                                animation: 'fadeIn 0.5s ease 0.2s both'
                             }}>
-                                {/* Current step display */}
                                 <div style={{
-                                    textAlign: 'center', marginBottom: '0.6rem', padding: '0.5rem',
-                                    background: currentStep === routeSteps.length - 1 ? 'rgba(76, 175, 80, 0.15)' : 'rgba(15, 98, 254, 0.15)',
-                                    borderRadius: '12px',
-                                    border: currentStep === routeSteps.length - 1 ? '1px solid rgba(76, 175, 80, 0.4)' : '1px solid rgba(15, 98, 254, 0.3)'
+                                    backgroundColor: 'rgba(20, 20, 20, 0.92)', backdropFilter: 'blur(20px)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '0.75rem',
+                                    boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
                                 }}>
-                                    <p style={{
-                                        color: currentStep === routeSteps.length - 1 ? '#4CAF50' : 'rgba(255,255,255,0.6)',
-                                        fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700
-                                    }}>
-                                        {currentStep === routeSteps.length - 1 ? '🎯 Ai ajuns la destinație' : 'Locația curentă'}
-                                    </p>
-                                    <p style={{ color: 'white', fontWeight: 700, fontSize: '1rem', marginTop: '2px' }}>
-                                        {currentStep === routeSteps.length - 1 ? '✅ ' : '📍 '}{routeSteps[currentStep]?.label || '—'}
-                                    </p>
-                                </div>
-
-                                {/* Progress bar */}
-                                <div style={{
-                                    height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px',
-                                    marginBottom: '0.6rem', overflow: 'hidden'
-                                }}>
+                                    {/* Current step display */}
                                     <div style={{
-                                        height: '100%', background: 'linear-gradient(90deg, #4ecdc4, #0f62fe)',
-                                        borderRadius: '2px', transition: 'width 0.3s ease',
-                                        width: `${((currentStep + 1) / routeSteps.length) * 100}%`
-                                    }} />
-                                </div>
+                                        textAlign: 'center', marginBottom: '0.6rem', padding: '0.5rem',
+                                        background: currentStep === routeSteps.length - 1 ? 'rgba(76, 175, 80, 0.15)' : 'rgba(15, 98, 254, 0.15)',
+                                        borderRadius: '12px',
+                                        border: currentStep === routeSteps.length - 1 ? '1px solid rgba(76, 175, 80, 0.4)' : '1px solid rgba(15, 98, 254, 0.3)'
+                                    }}>
+                                        <p style={{
+                                            color: currentStep === routeSteps.length - 1 ? '#4CAF50' : 'rgba(255,255,255,0.6)',
+                                            fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700
+                                        }}>
+                                            {currentStep === routeSteps.length - 1 ? '🎯 Arrived at destination' : 'Current location'}
+                                        </p>
+                                        <p style={{ color: 'white', fontWeight: 700, fontSize: '1rem', marginTop: '2px' }}>
+                                            {currentStep === routeSteps.length - 1 ? '✅ ' : '📍 '}{routeSteps[currentStep]?.label || '—'}
+                                        </p>
+                                    </div>
 
-                                {/* Prev / Next buttons */}
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                    <button
-                                        onClick={handlePrevStep}
-                                        disabled={currentStep === 0}
-                                        style={{
-                                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                                            padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.08)',
-                                            border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px',
-                                            color: currentStep === 0 ? 'rgba(255,255,255,0.3)' : 'white',
-                                            fontWeight: 600, fontSize: '0.85rem',
-                                            opacity: currentStep === 0 ? 0.5 : 1
-                                        }}
-                                    >
-                                        <ChevronLeft size={18} /> Înapoi
-                                    </button>
+                                    {/* Progress bar */}
+                                    <div style={{
+                                        height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px',
+                                        marginBottom: '0.6rem', overflow: 'hidden'
+                                    }}>
+                                        <div style={{
+                                            height: '100%', background: 'linear-gradient(90deg, #4ecdc4, #0f62fe)',
+                                            borderRadius: '2px', transition: 'width 0.3s ease',
+                                            width: `${((currentStep + 1) / routeSteps.length) * 100}%`
+                                        }} />
+                                    </div>
 
-                                    <button
-                                        onClick={handleNextStep}
-                                        disabled={currentStep >= routeSteps.length - 1}
-                                        style={{
-                                            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                                            padding: '0.75rem',
-                                            backgroundColor: currentStep >= routeSteps.length - 1 ? 'rgba(78, 205, 196, 0.2)' : '#4ecdc4',
-                                            border: 'none', borderRadius: '12px',
-                                            color: currentStep >= routeSteps.length - 1 ? 'rgba(78, 205, 196, 0.5)' : '#000',
-                                            fontWeight: 700, fontSize: '0.85rem'
-                                        }}
-                                    >
-                                        {currentStep >= routeSteps.length - 1 ? '✅ Ai ajuns!' : 'Următorul'} <ChevronRight size={18} />
-                                    </button>
+                                    {/* Prev / Next buttons */}
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <button
+                                            onClick={handlePrevStep}
+                                            disabled={currentStep === 0}
+                                            style={{
+                                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                                                padding: '0.75rem', backgroundColor: 'rgba(255,255,255,0.08)',
+                                                border: '1px solid rgba(255,255,255,0.15)', borderRadius: '12px',
+                                                color: currentStep === 0 ? 'rgba(255,255,255,0.3)' : 'white',
+                                                fontWeight: 600, fontSize: '0.85rem',
+                                                opacity: currentStep === 0 ? 0.5 : 1
+                                            }}
+                                        >
+                                            <ChevronLeft size={18} /> Back
+                                        </button>
+
+                                        <button
+                                            onClick={handleNextStep}
+                                            disabled={currentStep >= routeSteps.length - 1}
+                                            style={{
+                                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                                                padding: '0.75rem',
+                                                backgroundColor: currentStep >= routeSteps.length - 1 ? 'rgba(78, 205, 196, 0.2)' : '#4ecdc4',
+                                                border: 'none', borderRadius: '12px',
+                                                color: currentStep >= routeSteps.length - 1 ? 'rgba(78, 205, 196, 0.5)' : '#000',
+                                                fontWeight: 700, fontSize: '0.85rem'
+                                            }}
+                                        >
+                                            {currentStep >= routeSteps.length - 1 ? '✅ Arrived!' : 'Next'} <ChevronRight size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )
+                    }
                 </>
             )}
 
             {/* ─── ASSISTANT ARRIVED BUBBLE ─── */}
-            {assistArrived && (
-                <div style={{
-                    position: 'absolute', top: '2rem', left: '1.5rem', right: '1.5rem', zIndex: 1100,
-                    animation: 'fadeIn 0.4s ease'
-                }}>
+            {
+                assistArrived && (
                     <div style={{
-                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(78, 205, 196, 0.5)', borderRadius: '20px',
-                        padding: '1.25rem', textAlign: 'center',
-                        boxShadow: '0 8px 32px rgba(78, 205, 196, 0.3)'
+                        position: 'absolute', top: '2rem', left: '1.5rem', right: '1.5rem', zIndex: 1100,
+                        animation: 'fadeIn 0.4s ease'
                     }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✅</div>
-                        <h3 style={{ color: '#4ecdc4', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.4rem' }}>
-                            Assistant Arrived!
-                        </h3>
-                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
-                            Your assistant has arrived at {MAP_NODES.find(n => n.id === assistDest)?.label || 'the destination'}.
-                        </p>
-                        <button
-                            onClick={() => setAssistArrived(false)}
-                            style={{
-                                marginTop: '0.75rem', padding: '0.6rem 1.5rem',
-                                backgroundColor: '#4ecdc4', border: 'none', borderRadius: '12px',
-                                color: '#000', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer'
-                            }}
-                        >
-                            OK
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── DISABLED HELP BUTTON (bottom right) ─── */}
-            {!assistActive && (
-                <button
-                    onClick={() => setShowAssistPanel(!showAssistPanel)}
-                    style={{
-                        position: 'absolute', bottom: isNavigating ? '14.5rem' : '7.5rem', right: '1rem', zIndex: 1000,
-                        width: '52px', height: '52px', borderRadius: '50%',
-                        backgroundColor: '#0f62fe', border: '3px solid white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        boxShadow: '0 4px 20px rgba(15,98,254,0.5)', cursor: 'pointer',
-                        animation: 'fadeIn 0.3s ease',
-                        transition: 'bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}
-                >
-                    <Accessibility size={26} color="white" />
-                </button>
-            )}
-
-            {/* ─── ASK FOR ASSISTANCE PANEL ─── */}
-            {showAssistPanel && (
-                <div style={{
-                    position: 'absolute', bottom: isNavigating ? '18rem' : '11rem', right: '1rem', zIndex: 1001,
-                    animation: 'fadeIn 0.3s ease'
-                }}>
-                    <div style={{
-                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
-                        padding: '1.25rem', width: '240px',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Accessibility size={20} color="#0f62fe" />
-                                <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Disabled Help</span>
-                            </div>
-                            <button onClick={() => setShowAssistPanel(false)} style={{
-                                background: 'none', border: 'none', cursor: 'pointer', padding: '2px'
-                            }}>
-                                <X size={18} color="rgba(255,255,255,0.5)" />
-                            </button>
-                        </div>
-                        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', marginBottom: '0.85rem', lineHeight: 1.4 }}>
-                            Un asistent va veni imediat la locația ta curentă (<strong style={{ color: 'white' }}>
-                                {isNavigating && routeSteps.length > 0 && routeSteps[currentStep]
-                                    ? routeSteps[currentStep].label
-                                    : (selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Intrare')
-                                }</strong>) pentru a te ajuta.
-                        </p>
-                        <button
-                            onClick={handleRequestAssistance}
-                            style={{
-                                width: '100%', padding: '0.85rem', backgroundColor: '#0f62fe',
-                                border: 'none', borderRadius: '14px', color: 'white',
-                                fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-                                boxShadow: '0 4px 16px rgba(15,98,254,0.4)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
-                            }}
-                        >
-                            <Accessibility size={20} /> Cere Asistență
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* ─── ASSISTANT ETA TOP BAR ─── */}
-            {assistActive && (
-                <div style={{
-                    position: 'absolute', top: '1rem', left: '1rem', right: '1rem', zIndex: 1001,
-                    animation: 'fadeIn 0.5s ease'
-                }}>
-                    <div style={{
-                        backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
-                        padding: '1rem', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{
-                                backgroundColor: '#0f62fe', borderRadius: '50%', width: '44px', height: '44px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                                animation: 'pulse 1.5s infinite'
-                            }}>
-                                <Accessibility color="white" size={24} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', marginBottom: '2px' }}>
-                                    🚶 Assistant on the way
-                                </h3>
-                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
-                                    Security → {MAP_NODES.find(n => n.id === assistDest)?.label || 'Your location'}
-                                </p>
-                            </div>
-                            <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                                <p style={{ color: '#4ecdc4', fontWeight: 800, fontSize: '1.4rem', lineHeight: 1 }}>
-                                    {formatTime(assistTimeLeft)}
-                                </p>
-                                <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', marginTop: '2px' }}>ETA</p>
-                            </div>
+                        <div style={{
+                            backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(78, 205, 196, 0.5)', borderRadius: '20px',
+                            padding: '1.25rem', textAlign: 'center',
+                            boxShadow: '0 8px 32px rgba(78, 205, 196, 0.3)'
+                        }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✅</div>
+                            <h3 style={{ color: '#4ecdc4', fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.4rem' }}>
+                                Assistant Arrived!
+                            </h3>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                                Your assistant has arrived at {MAP_NODES.find(n => n.id === assistDest)?.label || 'the destination'}.
+                            </p>
                             <button
-                                onClick={handleCancelAssistance}
+                                onClick={() => setAssistArrived(false)}
                                 style={{
-                                    padding: '0.4rem 0.8rem', backgroundColor: 'transparent',
-                                    border: '1px solid var(--error)', borderRadius: '12px',
-                                    color: 'var(--error)', fontWeight: 600, fontSize: '0.75rem', flexShrink: 0, cursor: 'pointer'
+                                    marginTop: '0.75rem', padding: '0.6rem 1.5rem',
+                                    backgroundColor: '#4ecdc4', border: 'none', borderRadius: '12px',
+                                    color: '#000', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer'
                                 }}
                             >
-                                Cancel
+                                OK
                             </button>
                         </div>
-                        {/* Progress bar */}
+                    </div>
+                )
+            }
+
+            {/* ─── DISABLED HELP BUTTON (bottom right) ─── */}
+            {
+                !assistActive && (
+                    <button
+                        onClick={() => setShowAssistPanel(!showAssistPanel)}
+                        style={{
+                            position: 'absolute', bottom: isNavigating ? '14.5rem' : '7.5rem', right: '1rem', zIndex: 1000,
+                            width: '52px', height: '52px', borderRadius: '50%',
+                            backgroundColor: '#0f62fe', border: '3px solid white',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 4px 20px rgba(15,98,254,0.5)', cursor: 'pointer',
+                            animation: 'fadeIn 0.3s ease',
+                            transition: 'bottom 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                        }}
+                    >
+                        <Accessibility size={26} color="white" />
+                    </button>
+                )
+            }
+
+            {/* ─── ASK FOR ASSISTANCE PANEL ─── */}
+            {
+                showAssistPanel && (
+                    <div style={{
+                        position: 'absolute', bottom: isNavigating ? '18rem' : '11rem', right: '1rem', zIndex: 1001,
+                        animation: 'fadeIn 0.3s ease'
+                    }}>
                         <div style={{
-                            height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px',
-                            marginTop: '0.75rem', overflow: 'hidden'
+                            backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
+                            padding: '1.25rem', width: '240px',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.6)'
                         }}>
-                            <div style={{
-                                height: '100%', background: 'linear-gradient(90deg, #0f62fe, #4ecdc4)',
-                                borderRadius: '2px', transition: 'width 1s linear',
-                                width: `${((120 - assistTimeLeft) / 120) * 100}%`
-                            }} />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Accessibility size={20} color="#0f62fe" />
+                                    <span style={{ color: 'white', fontWeight: 700, fontSize: '0.9rem' }}>Disabled Help</span>
+                                </div>
+                                <button onClick={() => setShowAssistPanel(false)} style={{
+                                    background: 'none', border: 'none', cursor: 'pointer', padding: '2px'
+                                }}>
+                                    <X size={18} color="rgba(255,255,255,0.5)" />
+                                </button>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', marginBottom: '0.85rem', lineHeight: 1.4 }}>
+                                Un asistent va veni imediat la locația ta curentă (<strong style={{ color: 'white' }}>
+                                    {isNavigating && routeSteps.length > 0 && routeSteps[currentStep]
+                                        ? routeSteps[currentStep].label
+                                        : (selectedOriginId ? MAP_NODES.find(n => n.id === selectedOriginId)?.label : 'Intrare')
+                                    }</strong>) pentru a te ajuta.
+                            </p>
+                            <button
+                                onClick={handleRequestAssistance}
+                                style={{
+                                    width: '100%', padding: '0.85rem', backgroundColor: '#0f62fe',
+                                    border: 'none', borderRadius: '14px', color: 'white',
+                                    fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
+                                    boxShadow: '0 4px 16px rgba(15,98,254,0.4)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'
+                                }}
+                            >
+                                <Accessibility size={20} /> Cere Asistență
+                            </button>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            {/* ─── ASSISTANT ETA TOP BAR ─── */}
+            {
+                assistActive && (
+                    <div style={{
+                        position: 'absolute', top: '1rem', left: '1rem', right: '1rem', zIndex: 1001,
+                        animation: 'fadeIn 0.5s ease'
+                    }}>
+                        <div style={{
+                            backgroundColor: 'rgba(20, 20, 20, 0.95)', backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(15, 98, 254, 0.4)', borderRadius: '20px',
+                            padding: '1rem', boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{
+                                    backgroundColor: '#0f62fe', borderRadius: '50%', width: '44px', height: '44px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                                    animation: 'pulse 1.5s infinite'
+                                }}>
+                                    <Accessibility color="white" size={24} />
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <h3 style={{ fontWeight: 700, fontSize: '0.95rem', color: 'white', marginBottom: '2px' }}>
+                                        🚶 Assistant on the way
+                                    </h3>
+                                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem' }}>
+                                        Security → {MAP_NODES.find(n => n.id === assistDest)?.label || 'Your location'}
+                                    </p>
+                                </div>
+                                <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                                    <p style={{ color: '#4ecdc4', fontWeight: 800, fontSize: '1.4rem', lineHeight: 1 }}>
+                                        {formatTime(assistTimeLeft)}
+                                    </p>
+                                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.65rem', marginTop: '2px' }}>ETA</p>
+                                </div>
+                                <button
+                                    onClick={handleCancelAssistance}
+                                    style={{
+                                        padding: '0.4rem 0.8rem', backgroundColor: 'transparent',
+                                        border: '1px solid var(--error)', borderRadius: '12px',
+                                        color: 'var(--error)', fontWeight: 600, fontSize: '0.75rem', flexShrink: 0, cursor: 'pointer'
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                            {/* Progress bar */}
+                            <div style={{
+                                height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px',
+                                marginTop: '0.75rem', overflow: 'hidden'
+                            }}>
+                                <div style={{
+                                    height: '100%', background: 'linear-gradient(90deg, #0f62fe, #4ecdc4)',
+                                    borderRadius: '2px', transition: 'width 1s linear',
+                                    width: `${((120 - assistTimeLeft) / 120) * 100}%`
+                                }} />
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
 
             {/* ─── EMBEDDED MAP (map/index.html) ─── */}
             <iframe
@@ -835,7 +849,7 @@ const MapPage = () => {
                     background: rgba(255, 255, 255, 0.3);
                 }
             `}</style>
-        </div>
+        </div >
     );
 };
 

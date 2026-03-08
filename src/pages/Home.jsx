@@ -177,23 +177,23 @@ const Home = () => {
 
                 @keyframes planeLand {
                     0% {
-                        transform: translate(180px, -250px) rotate(-35deg) scale(0.5);
+                        transform: translate(-244px, -250px) rotate(35deg) scale(0.5);
                         opacity: 0;
                     }
                     15% {
                         opacity: 1;
                     }
                     45% {
-                        transform: translate(60px, -100px) rotate(-20deg) scale(0.75);
+                        transform: translate(-124px, -100px) rotate(20deg) scale(0.75);
                     }
                     70% {
-                        transform: translate(10px, -30px) rotate(-8deg) scale(0.9);
+                        transform: translate(-74px, -30px) rotate(8deg) scale(0.9);
                     }
                     85% {
                         transform: translate(-32px, -32px) rotate(0deg) scale(1);
                     }
                     92% {
-                        transform: translate(-32px, -28px) rotate(2deg) scale(1.05);
+                        transform: translate(-32px, -28px) rotate(-2deg) scale(1.05); /* Dip slightly the other way */
                     }
                     100% {
                         transform: translate(-32px, -32px) rotate(0deg) scale(1);
@@ -217,16 +217,16 @@ const Home = () => {
 
                 @keyframes contrailAnim {
                     0% {
-                        transform: translate(180px, -250px) rotate(-35deg) scaleX(0);
+                        transform: translate(-244px, -250px) rotate(35deg) scaleX(0);
                         opacity: 0;
                     }
                     15% {
                         opacity: 0.7;
-                        transform: translate(140px, -200px) rotate(-30deg) scaleX(0.5);
+                        transform: translate(-204px, -200px) rotate(30deg) scaleX(0.5);
                     }
                     50% {
                         opacity: 0.5;
-                        transform: translate(40px, -80px) rotate(-15deg) scaleX(1);
+                        transform: translate(-104px, -80px) rotate(15deg) scaleX(1);
                     }
                     75% {
                         opacity: 0.2;
