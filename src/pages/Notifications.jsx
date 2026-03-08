@@ -5,30 +5,30 @@ const mockNotifications = [
     {
         id: 1,
         type: 'alert',
-        title: '⚠️ Zbor mutat - Terminal nou',
-        message: 'Atenție! Zborul tău Tarom RO381 spre Roma a fost mutat la Gate 3 (în loc de Gate 6). Ruta ta a fost recalculată automat pe hartă.',
-        time: 'Acum 1 minut'
+        title: '⚠️ Flight Moved - New Terminal',
+        message: 'Attention! Your Tarom RO381 flight to Rome has been moved to Gate 3 (instead of Gate 6). Your route has been automatically recalculated on the map.',
+        time: '1 minute ago'
     },
     {
         id: 2,
         type: 'info',
-        title: 'Check-in finalizat',
-        message: 'Procedura de check-in s-a încheiat. Pregătește bagajele pentru security.',
-        time: 'Acum 35 minute'
+        title: 'Check-in Completed',
+        message: 'The check-in procedure is complete. Prepare your luggage for security.',
+        time: '35 minutes ago'
     },
     {
         id: 3,
         type: 'success',
-        title: 'Voucher Lounge Disponibil',
-        message: 'Fiind călător frecvent, ai primit acces gratuit în FlyMate Lounge. Găsești codul QR în profilul tău.',
-        time: 'Acum 1.5 ore'
+        title: 'Lounge Voucher Available',
+        message: 'As a frequent traveler, you have received free access to the FlyMate Lounge. You can find the QR code in your profile.',
+        time: '1.5 hours ago'
     },
     {
         id: 4,
         type: 'info',
-        title: 'Timp estimat Security',
-        message: 'Timpul curent de așteptare la controlul de securitate este de 8 minute.',
-        time: 'Acum 2 ore'
+        title: 'Estimated Security Wait Time',
+        message: 'The current wait time at the security checkpoint is 8 minutes.',
+        time: '2 hours ago'
     }
 ];
 
@@ -52,7 +52,7 @@ export default function Notifications() {
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
                 <Bell size={28} color="var(--primary)" />
-                <h1 style={{ m: 0, fontSize: '1.8rem', fontWeight: 700 }}>Notificări recente</h1>
+                <h1 style={{ m: 0, fontSize: '1.8rem', fontWeight: 700 }}>Recent Notifications</h1>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

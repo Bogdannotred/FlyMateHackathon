@@ -503,18 +503,34 @@ const MapPage = () => {
                                         Pas {currentStep + 1} / {routeSteps.length}
                                         {routeSteps[currentStep] && ` — ${routeSteps[currentStep].label}`}
                                     </p>
-                                    {routeSteps.length > 1 && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {routeSteps.length > 1 && (
+                                            <div style={{
+                                                display: 'flex', alignItems: 'center', gap: '4px',
+                                                background: 'rgba(78, 205, 196, 0.15)', padding: '2px 8px',
+                                                borderRadius: '8px', border: '1px solid rgba(78, 205, 196, 0.3)'
+                                            }}>
+                                                <span style={{ fontSize: '0.7rem' }}>⏱️</span>
+                                                <span style={{ color: '#4ecdc4', fontWeight: 600, fontSize: '0.75rem' }}>
+                                                    ETA {Math.max(1, Math.round(15 * (1 - (currentStep / Math.max(1, routeSteps.length - 1)))))} min
+                                                </span>
+                                            </div>
+                                        )}
                                         <div style={{
                                             display: 'flex', alignItems: 'center', gap: '4px',
-                                            background: 'rgba(78, 205, 196, 0.15)', padding: '2px 8px',
-                                            borderRadius: '8px', border: '1px solid rgba(78, 205, 196, 0.3)'
+                                            background: departureTime < 1800 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(78, 205, 196, 0.15)',
+                                            padding: '2px 8px', borderRadius: '8px',
+                                            border: `1px solid ${departureTime < 1800 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(78, 205, 196, 0.3)'}`
                                         }}>
-                                            <span style={{ fontSize: '0.7rem' }}>⏱️</span>
-                                            <span style={{ color: '#4ecdc4', fontWeight: 600, fontSize: '0.75rem' }}>
-                                                ETA {Math.max(1, Math.round(15 * (1 - (currentStep / Math.max(1, routeSteps.length - 1)))))} min
+                                            <span style={{ fontSize: '0.7rem' }}>✈️</span>
+                                            <span style={{
+                                                color: departureTime < 1800 ? '#ef4444' : '#4ecdc4',
+                                                fontWeight: 600, fontSize: '0.75rem'
+                                            }}>
+                                                {formatDeparture(departureTime)}
                                             </span>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             </div>
                             <button
